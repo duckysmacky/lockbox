@@ -1,2 +1,2 @@
 pub mod file;
-pub mod encryption;
+pub mod cipher;

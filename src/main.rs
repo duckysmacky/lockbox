@@ -1,8 +1,10 @@
 mod encryption;
 
-use std::io;
+use std::io::{self, Error};
 use chacha20poly1305::Nonce;
 use clap::{command, Arg, ArgAction, Command};
+
+use encryption::{cipher, file};
 
 fn main() -> io::Result<()> {
     let args = command!()
@@ -35,42 +37,49 @@ fn main() -> io::Result<()> {
     if let Some(args) = args.subcommand_matches("encrypt") {
         let path = args.get_one::<String>("filepath").expect("No path to the file was provided");
 
-        println!("File: {}", path);
-
-        let text = encryption::file::read_file(path)?;
-        let key = encryption::encryption::generate_key();
-        let nonce: Nonce = encryption::encryption::generate_nonce();
-
-        encryption::file::write_file("key.txt", &key)?;
-        encryption::file::write_file("nonce.txt", &nonce)?;
-
-        match encryption::encryption::encrypt(&key, &nonce, &text) {
-            Ok(encrypted_text) => {
-                encryption::file::write_file(path, &encrypted_text)?;
-                println!("Encrypted {}", path);
-            },
-            Err(err) => panic!("{}", err.to_string()),
+        match encrypt(path) {
+            Ok(bytes) => println!("Successfully encrypted {} bytes", bytes.len()),
+            Err(err) => panic!("Error has occured while trying to encrypt data: {}", err.to_string()),
         }
     }
 
     if let Some(args) = args.subcommand_matches("decrypt") {
         let path = args.get_one::<String>("filepath").expect("No path to the file was provided");
 
-        println!("File: {}", path);
-
-        let ciphertext: &[u8] = &encryption::file::read_file(path)?;
-        let key: &[u8] = &encryption::file::read_file("key.txt")?;
-        let nonce: &[u8] = &encryption::file::read_file("nonce.txt")?;
-
-        match encryption::encryption::decrypt(key, nonce.into(), ciphertext) {
-            Ok(decrypted_text) => {
-                encryption::file::write_file(path, &decrypted_text)?;
-                println!("Decrypted {}", path);
-            },
-            Err(err) => panic!("{}", err.to_string()),
+        match decrypt(path) {
+            Ok(bytes) => println!("Successfully decrypted {} bytes", bytes.len()),
+            Err(err) => panic!("Error has occured while trying to decrypt data: {}", err.to_string()),
         }
     }
     
-    // assert_eq!(&plaintext, b"plaintext message");
     Ok(())
+}
+
+fn encrypt(path: &str) -> Result<Vec<u8>, Error> {
+    println!("Encrypting {}...", path);
+
+    let plaintext = file::read_bytes(path)?;
+    let key = cipher::generate_key();
+    let nonce: Nonce = cipher::generate_nonce();
+
+    file::write_bytes("key.txt", &key)?;
+    file::write_bytes("nonce.txt", &nonce)?;
+
+    match cipher::encrypt(&key, &nonce, &plaintext) {
+        Ok(encrypted_text) => file::write_bytes(path, &encrypted_text),
+        Err(err) => panic!("Error has occured while trying to encrypt data: {}", err.to_string()),
+    }
+}
+
+fn decrypt(path: &str) -> Result<Vec<u8>, Error> {
+    println!("File: {}", path);
+
+    let ciphertext = file::read_bytes(path)?;
+    let key = file::read_bytes("key.txt")?;
+    let nonce = file::read_bytes("nonce.txt")?;
+
+    match encryption::cipher::decrypt(&key, &nonce, &ciphertext) {
+        Ok(decrypted_text) => file::write_bytes(path, &decrypted_text),
+        Err(err) => panic!("Error has occured while trying to decrypt data: {}", err.to_string()),
+    }
 }
