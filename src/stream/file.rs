@@ -4,11 +4,11 @@ use std::{
 };
 
 pub fn read_bytes(path: &str) -> Result<Vec<u8>, Error> {
-    let metadata = fs::metadata(path).expect("Unable to read metadata");
-    let mut file = File::open(path).expect("Specified file doesnt exist");
+    let metadata = fs::metadata(path)?;
+    let mut file = File::open(path)?;
     let mut buffer = vec![0; metadata.len() as usize];
 
-    file.read(&mut buffer).expect("Buffer overflow");
+    file.read(&mut buffer)?;
 
     file.flush()?;
     Ok(buffer)
@@ -19,8 +19,7 @@ pub fn write_bytes(path: &str, bytes: &[u8]) -> Result<Vec<u8>, Error> {
         .write(true)
         .create(true)
         .truncate(true)
-        .open(path)
-        .expect("Specified file doesnt exist");
+        .open(path)?;
 
     file.write_all(bytes)?;
     file.flush()?;
