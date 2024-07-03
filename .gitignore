@@ -1,4 +1,2 @@
-/target
-
-key.txt
-nonce.txt
+target/
+temp/
