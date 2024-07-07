@@ -1,8 +1,9 @@
 use std::{
-    fs::{self, File}, io::{Read, Result, Write}
+    io::{Read, Result, Write},
+    fs::File
 };
 
-use chacha20poly1305::Key;
+use super::cipher::{self, Key};
 
 // TODO - add an actual storage
 const KEY_PATH: &str = "temp/key.txt";
@@ -16,12 +17,18 @@ pub fn save_key(key: &Key) -> Result<()> {
     Ok(())
 }
 
-pub fn get_key() -> Result<Vec<u8>> {
-    let mut file = File::open(KEY_PATH).expect("Key not found");
-    let metadata = fs::metadata(KEY_PATH)?;
-    let mut key = vec![0u8; metadata.len() as usize];
+pub fn get_key() -> Result<Key> {
+    let mut file = match File::open(KEY_PATH) {
+        Ok(f) => f,
+        Err(_) => {
+            let key = cipher::generate_key();
+            save_key(&key)?;
+            File::open(KEY_PATH)?
+        }
+    };
+    let mut key = [0u8; 32];
 
-    file.read(&mut key)?;
+    file.read_exact(&mut key)?;
 
     file.flush()?;
     Ok(key)

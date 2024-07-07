@@ -6,11 +6,12 @@ use std::{
     path::Path
 };
 
-use chacha20poly1305::Nonce;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
-use super::cipher;
+use super::cipher::{self, Key, Nonce};
+
+pub type Checksum = [u8; 32];
 
 mod box_data {
     pub const VERSION: u8 = 1;
@@ -25,8 +26,8 @@ pub struct BoxHeader {
     pub original_filename: OsString,
     pub original_extension: OsString,
     pub original_size: u64,
-    pub checksum: [u8; 32],
-    pub nonce: [u8; 12]
+    pub checksum: Checksum,
+    pub nonce: Nonce
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -35,7 +36,7 @@ pub struct BoxFile {
     body: Vec<u8>
 }
 
-pub fn parse_file(path: &Path, key: &[u8]) -> Result<(BoxHeader, Vec<u8>)> {
+pub fn parse_file(path: &Path, key: Key) -> Result<(BoxHeader, Vec<u8>)> {
     let mut file = File::open(path)?;
     let metadata = fs::metadata(path)?;
 
@@ -48,8 +49,8 @@ pub fn parse_file(path: &Path, key: &[u8]) -> Result<(BoxHeader, Vec<u8>)> {
     let header = box_file.header;
     let body = box_file.body;
 
-    let nonce = header.nonce.as_slice();
-    let body = cipher::decrypt(key, &nonce, &body).expect("Failed to decrypt body data");
+    let nonce = header.nonce;
+    let body = cipher::decrypt(&key, &nonce, &body).expect("Failed to decrypt body data");
 
     file.flush()?;
     Ok((header, body))
@@ -67,7 +68,7 @@ pub fn write_file(path: &Path, header: BoxHeader, body: Vec<u8>) -> Result<()> {
     Ok(())
 }
 
-pub fn generate_header(path: &Path, checksum: [u8; 32], nonce: Nonce) -> Option<BoxHeader> {
+pub fn generate_header(path: &Path, checksum: Checksum, nonce: Nonce) -> Option<BoxHeader> {
     let file_data = fs::metadata(path).expect("Unable to get file metadata");
 
     let mut header = BoxHeader {
@@ -78,7 +79,7 @@ pub fn generate_header(path: &Path, checksum: [u8; 32], nonce: Nonce) -> Option<
         original_extension: path.extension()?.to_os_string(),
         original_size: file_data.file_size(),
         checksum,
-        nonce: nonce.into()
+        nonce
     };
 
     header.metadata_length = get_metadata_len(&header);
@@ -86,7 +87,7 @@ pub fn generate_header(path: &Path, checksum: [u8; 32], nonce: Nonce) -> Option<
     Some(header)
 }
 
-pub fn generate_checksum(data: &[u8]) -> [u8; 32] {
+pub fn generate_checksum(data: &[u8]) -> Checksum {
     let mut hasher = Sha256::new();
 
     hasher.update(data);
