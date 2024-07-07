@@ -1,5 +1,5 @@
 use std::io::ErrorKind;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::{
     io::{Error, Result},
     fs
@@ -8,8 +8,8 @@ use std::{
 use crate::encryption::{cipher, file, parser, storage};
 
 // TODO - (recursive) folder encryption
-pub fn encrypt_box(input_path: &str) -> Result<()> {
-    println!("Boxing {}", input_path);
+pub fn encrypt_box(input_path: &Path) -> Result<()> {
+    println!("Boxing {}", input_path.display());
     let mut path_buffer = PathBuf::from(input_path);
 
     // get needed pathes
@@ -18,7 +18,7 @@ pub fn encrypt_box(input_path: &str) -> Result<()> {
     // get needed data
     let file_data = file::read_bytes(file_path)?;
     let checksum = parser::generate_checksum(&file_data);
-    let key = cipher::generate_key();
+    let key = storage::get_key()?;
     let nonce = cipher::generate_nonce();
     let header = parser::generate_header(file_path, checksum, nonce).expect("Error generating header");
 
@@ -28,8 +28,8 @@ pub fn encrypt_box(input_path: &str) -> Result<()> {
     println!("Changing file...");
     // change the file to be .box instead
     fs::remove_file(file_path)?;
+    path_buffer.set_file_name(uuid::Uuid::new_v4().to_string());
     path_buffer.set_extension("box");
-    // TODO - generate random file name
     let file_path = path_buffer.as_path();
 
     println!("Encrypting data...");
@@ -41,8 +41,8 @@ pub fn encrypt_box(input_path: &str) -> Result<()> {
     Ok(())
 }
 
-pub fn decrypt_box(input_path: &str) -> Result<()> {
-    println!("Unboxing {}", input_path);
+pub fn decrypt_box(input_path: &Path) -> Result<()> {
+    println!("Unboxing {}", input_path.display());
     let mut path_buffer = PathBuf::from(input_path);
 
     // get needed pathes
