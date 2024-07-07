@@ -20,17 +20,14 @@ pub fn encrypt_box(input_path: &str) -> Result<()> {
     // get needed data
     let data = file::read_bytes(file_path)?;
     let checksum = parser::generate_checksum(&data);
-    let header = parser::generate_header(file_path, checksum).expect("Error generating header");
     let key = cipher::generate_key();
     let nonce = cipher::generate_nonce();
+    let header = parser::generate_header(file_path, checksum, nonce).expect("Error generating header");
 
     println!("Saving keys...");
-
     storage::save_key(&key)?;
-    storage::save_nonce(&nonce)?;
 
     println!("Changing file...");
-
     // change the file to be .box instead
     fs::remove_file(file_path)?;
     path_buffer.set_extension("box");
@@ -59,8 +56,7 @@ pub fn decrypt_box(input_path: &str) -> Result<()> {
 
     // get needed data
     let key = storage::get_key()?;
-    let nonce = storage::get_nonce()?;
-    let (header, body) = parser::parse_file(file_path, &key, &nonce)?;
+    let (header, body) = parser::parse_file(file_path, &key)?;
 
     println!("Got header: {:?}", header);
     println!("Validating checksum...");

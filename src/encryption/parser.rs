@@ -1,7 +1,12 @@
 use std::{
-    ffi::OsString, fs::{self, File}, io::{Read, Result, Write}, os::windows::fs::MetadataExt, path::Path
+    io::{Read, Result, Write},
+    fs::{self, File},
+    os::windows::fs::MetadataExt,
+    ffi::OsString,
+    path::Path
 };
 
+use chacha20poly1305::Nonce;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
@@ -20,7 +25,8 @@ pub struct BoxHeader {
     pub original_filename: OsString,
     pub original_extension: OsString,
     pub original_size: u64,
-    pub checksum: [u8; 32], // TODO - SHA-256 hash
+    pub checksum: [u8; 32],
+    pub nonce: [u8; 12]
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -29,7 +35,7 @@ pub struct BoxFile {
     body: Vec<u8>
 }
 
-pub fn parse_file(path: &Path, key: &[u8], nonce: &[u8]) -> Result<(BoxHeader, Vec<u8>)> {
+pub fn parse_file(path: &Path, key: &[u8]) -> Result<(BoxHeader, Vec<u8>)> {
     let mut file = File::open(path)?;
     let metadata = fs::metadata(path)?;
 
@@ -41,7 +47,9 @@ pub fn parse_file(path: &Path, key: &[u8], nonce: &[u8]) -> Result<(BoxHeader, V
 
     let header = box_file.header;
     let body = box_file.body;
-    let body = cipher::decrypt(key, nonce, &body).expect("Failed to decrypt body data");
+
+    let nonce = header.nonce.as_slice();
+    let body = cipher::decrypt(key, &nonce, &body).expect("Failed to decrypt body data");
 
     file.flush()?;
     Ok((header, body))
@@ -59,7 +67,7 @@ pub fn write_file(path: &Path, header: BoxHeader, body: Vec<u8>) -> Result<()> {
     Ok(())
 }
 
-pub fn generate_header(path: &Path, checksum: [u8; 32]) -> Option<BoxHeader> {
+pub fn generate_header(path: &Path, checksum: [u8; 32], nonce: Nonce) -> Option<BoxHeader> {
     let file_data = fs::metadata(path).expect("Unable to get file metadata");
 
     let mut header = BoxHeader {
@@ -70,6 +78,7 @@ pub fn generate_header(path: &Path, checksum: [u8; 32]) -> Option<BoxHeader> {
         original_extension: path.extension()?.to_os_string(),
         original_size: file_data.file_size(),
         checksum,
+        nonce: nonce.into()
     };
 
     header.metadata_length = get_metadata_len(&header);
@@ -90,6 +99,7 @@ pub fn generate_checksum(data: &[u8]) -> [u8; 32] {
     checksum
 }
 
+// TODO - optimise
 fn get_metadata_len(header: &BoxHeader) -> u16 {
     let mut metadata_len = 0;
 
@@ -100,6 +110,7 @@ fn get_metadata_len(header: &BoxHeader) -> u16 {
     metadata_len += header.original_extension.len();
     metadata_len += 8; // original_size: u64 = 8 bytes
     metadata_len += 32; // checksum: u8 * 32 = 32 bytes
+    metadata_len += 12; // nonce: u8 * 12 = 12 bytes
 
     metadata_len as u16
 }
