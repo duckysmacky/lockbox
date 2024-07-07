@@ -1,11 +1,9 @@
 use std::io::ErrorKind;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::{
     io::{Error, Result},
     fs
 };
-
-use chacha20poly1305::{Key, Nonce};
 
 use crate::encryption::{cipher, file, parser, storage};
 
@@ -77,53 +75,6 @@ pub fn decrypt_box(input_path: &str) -> Result<()> {
     println!("Writing data...");
 
     file::write_bytes(&file_path, &body)?;
-
-    Ok(())
-}
-
-pub fn encrypt(input_path: &str) -> Result<()> {
-    println!("Encrypting {}", input_path);
-    let file_path = Path::new(input_path);
-
-    // get needed data
-    let data = file::read_bytes(file_path)?;
-    let key: Key = cipher::generate_key();
-    let nonce: Nonce = cipher::generate_nonce();
-
-    println!("Saving keys...");
-
-    storage::save_key(&key)?;
-    storage::save_nonce(&nonce)?;
-
-    println!("Encrypting data...");
-
-    let data = cipher::encrypt(&key, &nonce, &data).expect("Error encrypting file");
-
-    println!("Writing data...");
-
-    file::write_bytes(file_path, &data)?;
-
-    Ok(())
-}
-
-pub fn decrypt(input_path: &str) -> Result<()> {
-    println!("Decrypting {}", input_path);
-    let file_path = Path::new(input_path);
-
-    println!("Reading data...");
-
-    // get needed data
-    let key = storage::get_key()?;
-    let nonce = storage::get_nonce()?;
-    let data = file::read_bytes(file_path)?;
-
-    println!("Decrypting data...");
-
-    let data = cipher::decrypt(&key, &nonce, &data).expect("Error decrypting file data");
-
-    println!("Writing data...");
-
-    file::write_bytes(&file_path, &data)?;
 
     Ok(())
 }
