@@ -1,14 +1,13 @@
-use std::io::ErrorKind;
 use std::path::{Path, PathBuf};
-use std::{
-    io::{Error, Result},
-    fs
-};
+use std::{fs, io};
 
 use crate::encryption::{cipher, file, parser, storage};
 
-// TODO - (recursive) folder encryption
-pub fn encrypt_box(input_path: &Path) -> Result<()> {
+pub fn encrypt_box(input_path: &Path) -> io::Result<()> {
+    if input_path.extension().unwrap() == "box" {
+        println!("{} is already encrypted! Skipping", input_path.display());
+        return Ok(());
+    }
     println!("Boxing {}", input_path.display());
     let mut path_buffer = PathBuf::from(input_path);
 
@@ -41,7 +40,11 @@ pub fn encrypt_box(input_path: &Path) -> Result<()> {
     Ok(())
 }
 
-pub fn decrypt_box(input_path: &Path) -> Result<()> {
+pub fn decrypt_box(input_path: &Path) -> io::Result<()> {
+    if input_path.extension().unwrap() != "box" {
+        println!("{} is not encrypted! Skipping", input_path.display());
+        return Ok(());
+    }
     println!("Unboxing {}", input_path.display());
     let mut path_buffer = PathBuf::from(input_path);
 
@@ -56,7 +59,10 @@ pub fn decrypt_box(input_path: &Path) -> Result<()> {
     println!("Validating checksum...");
     let new_checksum = parser::generate_checksum(&body);
     if new_checksum != header.checksum {
-        return Err(Error::new(ErrorKind::InvalidData, "Checksum verification failed"));
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidData,
+            "Checksum verification failed")
+        );
     }
 
     println!("Changing file...");

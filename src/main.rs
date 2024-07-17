@@ -48,7 +48,7 @@ fn main() -> io::Result<()> {
     if let Some(args) = args.subcommand_matches("box") {
         match path::parse_path(args, command::encrypt_box) {
             Ok(_) => println!("Encryption finished"),
-            Err(err) => panic!("Error has occured while trying to encrypt data: {}", err.to_string()),
+            Err(err) => panic!("Error has occurred while trying to encrypt data: {}", err.to_string()),
         }
     }
 
@@ -56,7 +56,7 @@ fn main() -> io::Result<()> {
     if let Some(args) = args.subcommand_matches("unbox") {
         match path::parse_path(args, command::decrypt_box) {
             Ok(_) => println!("Decryption finished"),
-            Err(err) => panic!("Error has occured while trying to decrypt data: {}", err.to_string()),
+            Err(err) => panic!("Error has occurred while trying to decrypt data: {}", err.to_string()),
         }
     }
     

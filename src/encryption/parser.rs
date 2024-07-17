@@ -1,5 +1,5 @@
 use std::{
-    io::{Read, Result, Write},
+    io::{self, Read, Write},
     fs::{self, File},
     os::windows::fs::MetadataExt,
     ffi::OsString,
@@ -36,7 +36,7 @@ pub struct BoxFile {
     body: Vec<u8>
 }
 
-pub fn parse_file(path: &Path, key: Key) -> Result<(BoxHeader, Vec<u8>)> {
+pub fn parse_file(path: &Path, key: Key) -> io::Result<(BoxHeader, Vec<u8>)> {
     let mut file = File::open(path)?;
     let metadata = fs::metadata(path)?;
 
@@ -56,7 +56,7 @@ pub fn parse_file(path: &Path, key: Key) -> Result<(BoxHeader, Vec<u8>)> {
     Ok((header, body))
 }
 
-pub fn write_file(path: &Path, header: BoxHeader, body: Vec<u8>) -> Result<()> {
+pub fn write_file(path: &Path, header: BoxHeader, body: Vec<u8>) -> io::Result<()> {
     let mut file = File::create(path)?;
 
     let box_file = BoxFile {header, body};
@@ -85,6 +85,18 @@ pub fn generate_header(path: &Path, checksum: Checksum, nonce: Nonce) -> Option<
     header.metadata_length = get_metadata_len(&header);
 
     Some(header)
+}
+
+pub fn get_header(path: &Path) -> io::Result<BoxHeader> {
+    let mut file = File::open(path)?;
+    let metadata = fs::metadata(path)?;
+    let mut buffer = vec![0; metadata.len() as usize];
+
+    file.read(&mut buffer)?;
+    let box_file: BoxFile = bincode::deserialize(&buffer).expect("Failed to deserialize box file");
+    let header = box_file.header;
+
+    Ok(header)
 }
 
 pub fn generate_checksum(data: &[u8]) -> Checksum {
