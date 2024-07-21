@@ -1,9 +1,9 @@
 use std::path::{Path, PathBuf};
 use std::{fs, io};
-
+use clap::ArgMatches;
 use crate::encryption::{cipher, file, parser, storage};
 
-pub fn encrypt_box(input_path: &Path) -> io::Result<()> {
+pub fn encrypt_box(args: &ArgMatches, input_path: &Path) -> io::Result<()> {
     if input_path.extension().unwrap() == "box" {
         println!("{} is already encrypted! Skipping", input_path.display());
         return Ok(());
@@ -27,7 +27,11 @@ pub fn encrypt_box(input_path: &Path) -> io::Result<()> {
     println!("Changing file...");
     // change the file to be .box instead
     fs::remove_file(file_path)?;
-    path_buffer.set_file_name(uuid::Uuid::new_v4().to_string());
+    if let Some(new_name) = args.get_one::<String>("custom-name") {
+        path_buffer.set_file_name(new_name);
+    } else if !args.get_flag("keep-name") {
+        path_buffer.set_file_name(uuid::Uuid::new_v4().to_string());
+    }
     path_buffer.set_extension("box");
     let file_path = path_buffer.as_path();
 
@@ -40,7 +44,7 @@ pub fn encrypt_box(input_path: &Path) -> io::Result<()> {
     Ok(())
 }
 
-pub fn decrypt_box(input_path: &Path) -> io::Result<()> {
+pub fn decrypt_box(args: &ArgMatches, input_path: &Path) -> io::Result<()> {
     if input_path.extension().unwrap() != "box" {
         println!("{} is not encrypted! Skipping", input_path.display());
         return Ok(());

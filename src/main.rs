@@ -30,19 +30,19 @@ fn main() -> io::Result<()> {
 
 fn get_command() -> Command {
     command!()
-        .arg(Arg::new("debug")
+        .arg(Arg::new("debug") // TODO
             .short('d')
             .long("debug")
             .action(ArgAction::SetTrue)
             .help("Turns on debug mode")
         )
-        .arg(Arg::new("verbose")
+        .arg(Arg::new("verbose") // TODO
             .short('v')
             .long("verbose")
             .help("Use verbose output (extra information)")
             .action(ArgAction::SetTrue)
         )
-        .arg(Arg::new("quiet")
+        .arg(Arg::new("quiet") // TODO
             .short('q')
             .long("quiet")
             .help("Do not print any log messages")
@@ -71,7 +71,7 @@ fn get_command() -> Command {
                 .short('n')
                 .long("name")
                 .help("Specify file name for encrypted file")
-                .action(ArgAction::SetTrue)
+                .action(ArgAction::Set)
                 .conflicts_with("keep-name")
             )
         )
