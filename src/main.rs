@@ -17,7 +17,7 @@ fn main() -> io::Result<()> {
     // BOX
     if let Some(args) = args.subcommand_matches("box") {
         match path::parse_path(args, command::encrypt_box) {
-            Ok(_) => println!("Encryption finished"),
+            Ok(_) => log_success!("Encryption finished"),
             Err(err) => panic!("Error has occurred while trying to encrypt data: {}", err.to_string()),
         }
     }
@@ -25,7 +25,7 @@ fn main() -> io::Result<()> {
     // UNBOX
     if let Some(args) = args.subcommand_matches("unbox") {
         match path::parse_path(args, command::decrypt_box) {
-            Ok(_) => println!("Decryption finished"),
+            Ok(_) => log_success!("Decryption finished"),
             Err(err) => panic!("Error has occurred while trying to decrypt data: {}", err.to_string()),
         }
     }
@@ -35,20 +35,20 @@ fn main() -> io::Result<()> {
 
 fn get_command() -> Command {
     command!()
-        .arg(Arg::new("debug") // TODO
+        .arg(Arg::new("debug")
             .short('d')
             .long("debug")
             .action(ArgAction::SetTrue)
             .help("Turns on debug mode")
         )
-        .arg(Arg::new("verbose") // TODO
+        .arg(Arg::new("verbose")
             .short('v')
             .long("verbose")
             .help("Use verbose output (extra information)")
             .action(ArgAction::SetTrue)
             .conflicts_with("quiet")
         )
-        .arg(Arg::new("quiet") // TODO
+        .arg(Arg::new("quiet")
             .short('q')
             .long("quiet")
             .help("Do not print any log messages")

@@ -1,4 +1,3 @@
-// TODO: Fix stack overflow somewhere
 use std::{
     sync::{Arc, Mutex},
     string::String,
@@ -17,10 +16,12 @@ lazy_static! {
     );
 }
 
+#[derive(Debug, PartialEq)]
 pub enum LogType {
     INFO, WARNING, SUCCESS, ERROR, DEBUG
 }
 
+#[derive(Debug)]
 enum LoggerMode {
     QUIET, NORMAL, VERBOSE
 }
@@ -28,12 +29,6 @@ enum LoggerMode {
 pub struct Logger {
     debug: bool,
     mode: LoggerMode
-}
-
-impl PartialEq for LogType {
-    fn eq(&self, other: &Self) -> bool {
-        self == other
-    }
 }
 
 impl Logger {
@@ -55,16 +50,16 @@ impl Logger {
         match self.mode {
             LoggerMode::QUIET => {
                 if log_type == LogType::ERROR {
-                    println!("[{:?}] {}", get_icon(log_type), message);
+                    println!("[{}] {}", get_icon(log_type), message);
                 }
             },
             LoggerMode::NORMAL => {
                 if log_type == LogType::SUCCESS || log_type == LogType::ERROR {
-                    println!("[{:?}] {}", get_icon(log_type), message);
+                    println!("[{}] {}", get_icon(log_type), message);
                 }
             },
             LoggerMode::VERBOSE => {
-                println!("[{:?}] {}", get_icon(log_type), message);
+                println!("[{}] {}", get_icon(log_type), message);
             },
         }
     }
@@ -142,7 +137,7 @@ macro_rules! log_debug {
 
 fn get_icon(log_type: LogType) -> String {
     match log_type {
-        LogType::INFO => String::from("#"),
+        LogType::INFO => String::from("i"),
         LogType::WARNING => String::from("!"),
         LogType::SUCCESS => String::from("+"),
         LogType::ERROR => String::from("-"),
