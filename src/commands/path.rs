@@ -2,8 +2,10 @@ use std::{fs, io, path::Path};
 use std::ffi::OsString;
 
 use clap::ArgMatches;
+use std::string::String;
 
 use crate::encryption::parser;
+use crate::{log_error, log_info};
 
 pub fn parse_path(args: &ArgMatches, callback: fn(&ArgMatches, &Path) -> io::Result<()>) -> io::Result<()> {
     let paths = match args.get_many::<String>("path") {
@@ -22,7 +24,7 @@ pub fn parse_path(args: &ArgMatches, callback: fn(&ArgMatches, &Path) -> io::Res
             match search_for_original(path.parent().unwrap(), target_name) {
                 Ok(box_path) => callback(args, Path::new(&box_path))?,
                 Err(_) => {
-                    println!("Path \"{}\" doesn't exist!", path.display());
+                    log_error!("Path \"{}\" doesn't exist!", path.display());
                     continue;
                 }
             }
@@ -56,7 +58,7 @@ fn search_for_original(dir: &Path, target_name: OsString) -> io::Result<OsString
 
         let original_name = parser::get_header(path.as_path())?.original_filename;
         if target_name == original_name {
-            println!("Found an encrypted (.box) file with the same original name: {}", path.display());
+            log_info!("Found an encrypted (.box) file with the same original name: {}", path.display());
             return Ok(path.as_os_str().to_os_string())
         }
     }

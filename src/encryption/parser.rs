@@ -8,7 +8,6 @@ use std::{
 
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
-
 use super::cipher::{self, Key, Nonce};
 
 pub type Checksum = [u8; 32];

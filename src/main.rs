@@ -1,5 +1,6 @@
 mod commands;
 mod encryption;
+mod logger;
 
 use std::io::{self};
 use clap::{command, Arg, ArgAction, Command};
@@ -8,6 +9,10 @@ use crate::commands::{command, path};
 
 fn main() -> io::Result<()> {
     let args = get_command().get_matches();
+
+    logger::configure_logger(&args);
+
+    println!();
 
     // BOX
     if let Some(args) = args.subcommand_matches("box") {
@@ -41,12 +46,14 @@ fn get_command() -> Command {
             .long("verbose")
             .help("Use verbose output (extra information)")
             .action(ArgAction::SetTrue)
+            .conflicts_with("quiet")
         )
         .arg(Arg::new("quiet") // TODO
             .short('q')
             .long("quiet")
             .help("Do not print any log messages")
             .action(ArgAction::SetTrue)
+            .conflicts_with("verbose")
         )
         .subcommand(Command::new("box")
             .about("Encrypt specified files into a special file type")
