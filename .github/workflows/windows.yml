@@ -1,4 +1,4 @@
-name: Build and test
+name: Windows Build
 
 on:
   push:
@@ -12,13 +12,13 @@ env:
 jobs:
   build:
 
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
 
     steps:
     - uses: actions/checkout@v4
     
     - name: Build binary
-      run: cargo build --verbose
+      run: cargo build
       
     - name: Run tests
-      run: cargo test --verbose -- --test-threads=1
+      run: cargo test -- --test-threads=1
