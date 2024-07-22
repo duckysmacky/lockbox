@@ -12,8 +12,6 @@ fn main() -> io::Result<()> {
 
     logger::configure_logger(&args);
 
-    println!();
-
     // BOX
     if let Some(args) = args.subcommand_matches("box") {
         match path::parse_path(args, command::encrypt_box) {

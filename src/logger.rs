@@ -44,7 +44,7 @@ impl Logger {
             if !self.debug {
                 return;
             }
-            println!("[{:?}] {}", get_icon(log_type), message);
+            println!("[{}] {}", get_icon(log_type), message);
             return;
         }
         match self.mode {
@@ -141,6 +141,6 @@ fn get_icon(log_type: LogType) -> String {
         LogType::WARNING => String::from("!"),
         LogType::SUCCESS => String::from("+"),
         LogType::ERROR => String::from("-"),
-        LogType::DEBUG => String::from("D")
+        LogType::DEBUG => String::from("d")
     }
 }
