@@ -19,6 +19,9 @@ jobs:
     
     - name: Build binary
       run: cargo build
-      
+
+    - name: Add temporally folder
+      run: mkdir temp
+
     - name: Run tests
       run: cargo test -- --test-threads=1

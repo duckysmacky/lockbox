@@ -8,14 +8,14 @@ use common::*;
 
 fn encrypt(path: &PathBuf) -> Output {
     Command::new("lockbox")
-        .args(&["box", path.to_str().unwrap()])
+        .args(&["-v", "box", path.to_str().unwrap()])
         .output()
         .expect("failed to execute process")
 }
 
 fn decrypt(path: &PathBuf) -> Output {
     Command::new("lockbox")
-        .args(&["unbox", path.to_str().unwrap()])
+        .args(&["-v", "unbox", path.to_str().unwrap()])
         .output()
         .expect("failed to execute process")
 }
