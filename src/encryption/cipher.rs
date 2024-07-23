@@ -16,7 +16,7 @@ pub fn generate_nonce() -> Nonce {
 
 pub fn encrypt(key: &Key, nonce: &Nonce, plaintext: &[u8]) -> Result<Vec<u8>, Error> {
     let cipher = ChaCha20Poly1305::new(key.into());
-    
+
     let ciphertext = cipher.encrypt(nonce.into(), plaintext)?;
 
     Ok(ciphertext)
@@ -24,7 +24,7 @@ pub fn encrypt(key: &Key, nonce: &Nonce, plaintext: &[u8]) -> Result<Vec<u8>, Er
 
 pub fn decrypt(key: &Key, nonce: &Nonce, ciphertext: &[u8]) -> Result<Vec<u8>, Error> {
     let cipher = ChaCha20Poly1305::new(key.into());
-    
+
     let plaintext = cipher.decrypt(nonce.into(), ciphertext)?;
 
     Ok(plaintext)

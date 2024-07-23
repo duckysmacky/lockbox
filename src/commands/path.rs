@@ -1,28 +1,29 @@
-use std::{fs, io, path::Path};
-use std::ffi::OsString;
-
-use clap::ArgMatches;
-use std::string::String;
+use std::{fs, io, path::Path, ffi::OsString};
 
 use crate::encryption::parser;
 use crate::{log_error, log_info};
+use crate::commands::BoxOptions;
 
-pub fn parse_path(args: &ArgMatches, callback: fn(&ArgMatches, &Path) -> io::Result<()>) -> io::Result<()> {
-    let paths = match args.get_many::<String>("path") {
-        Some(p) => p.map(|s| Path::new(s.as_str())).collect::<Vec<&Path>>(),
-        None => vec![Path::new(".")],
-    };
+type CallbackFunction = fn(&Path, &BoxOptions) -> io::Result<()>;
+
+pub struct PathOptions<'a> {
+    pub paths: Vec<&'a Path>,
+    pub recursive: bool
+}
+
+pub fn parse_path(opts: &PathOptions, callback: CallbackFunction, callback_options: BoxOptions) -> io::Result<()> {
+    let paths = &opts.paths;
 
     for path in paths {
         if path.is_dir() {
-            read_dir(path, args, callback)?;
+            read_dir(path, opts, callback, &callback_options)?;
         } else if path.is_file() {
-            callback(args, path)?;
+            callback(path, &callback_options)?;
         } else if !path.exists() {
             let target_name = path.file_stem().unwrap().to_os_string();
 
             match search_for_original(path.parent().unwrap(), target_name) {
-                Ok(box_path) => callback(args, Path::new(&box_path))?,
+                Ok(box_path) => callback(Path::new(&box_path), &callback_options)?,
                 Err(_) => {
                     log_error!("Path \"{}\" doesn't exist!", path.display());
                     continue;
@@ -34,15 +35,16 @@ pub fn parse_path(args: &ArgMatches, callback: fn(&ArgMatches, &Path) -> io::Res
     Ok(())
 }
 
-fn read_dir(dir: &Path, args: &ArgMatches, callback: fn(&ArgMatches, &Path) -> io::Result<()>) -> io::Result<()> {
-    let recursive = args.get_flag("recursive");
+fn read_dir(dir: &Path, opts: &PathOptions, callback: CallbackFunction, callback_options: &BoxOptions) -> io::Result<()> {
+    let recursive = opts.recursive;
+
     for entry in fs::read_dir(dir)? {
         let entry = entry?;
         let path = entry.path();
         if path.is_dir() && recursive {
-            read_dir(&path, args, callback)?;
+            read_dir(&path, opts, callback, callback_options)?;
         } else if path.is_file() {
-            callback(args, &path)?;
+            callback(&path, callback_options)?;
         }
     }
 

@@ -1,11 +1,10 @@
 mod commands;
 mod encryption;
 mod logger;
+mod storage;
 
 use std::io::{self};
 use clap::{command, Arg, ArgAction, Command};
-
-use crate::commands::{command, path};
 
 fn main() -> io::Result<()> {
     let args = get_command().get_matches();
@@ -14,7 +13,7 @@ fn main() -> io::Result<()> {
 
     // BOX
     if let Some(args) = args.subcommand_matches("box") {
-        match path::parse_path(args, command::encrypt_box) {
+        match commands::box_files(args) {
             Ok(_) => log_success!("Encryption finished"),
             Err(err) => panic!("Error has occurred while trying to encrypt data: {}", err.to_string()),
         }
@@ -22,7 +21,7 @@ fn main() -> io::Result<()> {
 
     // UNBOX
     if let Some(args) = args.subcommand_matches("unbox") {
-        match path::parse_path(args, command::decrypt_box) {
+        match commands::unbox_files(args) {
             Ok(_) => log_success!("Decryption finished"),
             Err(err) => panic!("Error has occurred while trying to decrypt data: {}", err.to_string()),
         }

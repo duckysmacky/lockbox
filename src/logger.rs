@@ -16,12 +16,11 @@ lazy_static! {
     );
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(PartialEq)]
 pub enum LogType {
     INFO, WARNING, SUCCESS, ERROR, DEBUG
 }
 
-#[derive(Debug)]
 enum LoggerMode {
     QUIET, NORMAL, VERBOSE
 }

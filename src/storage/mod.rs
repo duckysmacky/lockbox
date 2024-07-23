@@ -3,7 +3,8 @@ use std::{
     fs::File
 };
 use crate::{log_info, log_warn};
-use super::cipher::{self, Key};
+use crate::encryption::cipher;
+use crate::encryption::cipher::Key;
 
 // TODO - add an actual storage
 const KEY_PATH: &str = "temp/key.txt";
