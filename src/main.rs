@@ -13,7 +13,7 @@ fn main() -> io::Result<()> {
 
     // BOX
     if let Some(args) = args.subcommand_matches("box") {
-        match commands::box_files(args) {
+        match commands::encrypt(args) {
             Ok(_) => log_success!("Encryption finished"),
             Err(err) => panic!("Error has occurred while trying to encrypt data: {}", err.to_string()),
         }
@@ -21,7 +21,7 @@ fn main() -> io::Result<()> {
 
     // UNBOX
     if let Some(args) = args.subcommand_matches("unbox") {
-        match commands::unbox_files(args) {
+        match commands::decrypt(args) {
             Ok(_) => log_success!("Decryption finished"),
             Err(err) => panic!("Error has occurred while trying to decrypt data: {}", err.to_string()),
         }
@@ -55,7 +55,8 @@ fn get_command() -> Command {
         .subcommand(Command::new("box")
             .about("Encrypt specified files into a special file type")
             .arg(Arg::new("path")
-                .help("Specify path to the file/directory to be encrypted")
+                .help("Specify the path(s) to a file or directory for encryption. A file path encrypts the file and a directory path encrypts all files within")
+                .default_value(".")
                 .action(ArgAction::Append)
             )
             .arg(Arg::new("recursive")
@@ -82,7 +83,8 @@ fn get_command() -> Command {
         .subcommand(Command::new("unbox")
             .about("Decrypt specified files from a special file type")
             .arg(Arg::new("path")
-                .help("Specify path to the file/directory to be decrypted")
+                .help("Specify the path(s) to a file or directory for encryption. A file path encrypts the file and a directory path encrypts all files within")
+                .default_value(".")
                 .action(ArgAction::Append)
             )
             .arg(Arg::new("recursive")

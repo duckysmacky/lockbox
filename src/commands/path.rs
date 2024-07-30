@@ -1,29 +1,19 @@
 use std::{fs, io, path::Path, ffi::OsString};
-
+use std::path::PathBuf;
 use crate::encryption::parser;
 use crate::{log_error, log_info};
-use crate::commands::BoxOptions;
 
-type CallbackFunction = fn(&Path, &BoxOptions) -> io::Result<()>;
-
-pub struct PathOptions<'a> {
-    pub paths: Vec<&'a Path>,
-    pub recursive: bool
-}
-
-pub fn parse_path(opts: &PathOptions, callback: CallbackFunction, callback_options: BoxOptions) -> io::Result<()> {
-    let paths = &opts.paths;
-
-    for path in paths {
+pub fn parse_paths(input_paths: Vec<PathBuf>, file_paths: &mut Vec<PathBuf>, recursive: bool) -> io::Result<()> {
+    for path in input_paths {
         if path.is_dir() {
-            read_dir(path, opts, callback, &callback_options)?;
+            read_dir(&path, file_paths, recursive)?;
         } else if path.is_file() {
-            callback(path, &callback_options)?;
+            file_paths.push(path);
         } else if !path.exists() {
             let target_name = path.file_stem().unwrap().to_os_string();
 
             match search_for_original(path.parent().unwrap(), target_name) {
-                Ok(box_path) => callback(Path::new(&box_path), &callback_options)?,
+                Ok(box_path) => file_paths.push(box_path),
                 Err(_) => {
                     log_error!("Path \"{}\" doesn't exist!", path.display());
                     continue;
@@ -35,33 +25,31 @@ pub fn parse_path(opts: &PathOptions, callback: CallbackFunction, callback_optio
     Ok(())
 }
 
-fn read_dir(dir: &Path, opts: &PathOptions, callback: CallbackFunction, callback_options: &BoxOptions) -> io::Result<()> {
-    let recursive = opts.recursive;
+fn read_dir(dir_path: &Path, file_paths: &mut Vec<PathBuf>, recursive: bool) -> io::Result<()> {
+    for entry in fs::read_dir(dir_path)? {
+        let path = entry?.path();
 
-    for entry in fs::read_dir(dir)? {
-        let entry = entry?;
-        let path = entry.path();
         if path.is_dir() && recursive {
-            read_dir(&path, opts, callback, callback_options)?;
+            read_dir(&path, file_paths, true)?;
         } else if path.is_file() {
-            callback(&path, callback_options)?;
+            file_paths.push(path);
         }
     }
 
     Ok(())
 }
 
-fn search_for_original(dir: &Path, target_name: OsString) -> io::Result<OsString> {
-    for entry in fs::read_dir(dir)? {
+fn search_for_original(dir_path: &Path, target_name: OsString) -> io::Result<PathBuf> {
+    for entry in fs::read_dir(dir_path)? {
         let path = entry?.path();
-        if !path.is_file() || path.extension().unwrap() != "box" {
-            continue;
-        }
+
+        if !path.is_file() || path.extension().unwrap() != "box" { continue; }
 
         let original_name = parser::get_header(path.as_path())?.original_filename;
+
         if target_name == original_name {
             log_info!("Found an encrypted (.box) file with the same original name: {}", path.display());
-            return Ok(path.as_os_str().to_os_string())
+            return Ok(path)
         }
     }
 
