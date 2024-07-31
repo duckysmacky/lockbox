@@ -2,9 +2,13 @@ use std::{path::{Path, PathBuf}, fs, io};
 
 use crate::encryption::{cipher, file, parser};
 use crate::{log_info, log_success, log_warn, storage};
-use crate::commands::BoxOptions;
 
-pub fn encrypt(input_path: &Path, opts: &BoxOptions) -> io::Result<()> {
+pub struct EncryptionOptions {
+    pub keep_name: bool,
+    pub output_paths: Option<Vec<PathBuf>>
+}
+
+pub fn encrypt(input_path: &Path, opts: &EncryptionOptions) -> io::Result<()> {
     if input_path.extension().unwrap() == "box" {
         log_warn!("\"{:?}\" is already encrypted! Skipping", input_path.file_name().unwrap().to_os_string());
         return Ok(());
@@ -26,12 +30,13 @@ pub fn encrypt(input_path: &Path, opts: &BoxOptions) -> io::Result<()> {
     log_info!("Saving keys");
     storage::save_key(&key)?;
 
-    log_info!("Changing file");
+    log_info!("Converting file");
     // change the file to be .box instead
     fs::remove_file(file_path)?;
-    if let Some(new_name) = opts.custom_name {
-        path_buffer.set_file_name(new_name);
-    } else if !opts.keep_name {
+    // if let Some(new_name) = opts.custom_name {
+    //     path_buffer.set_file_name(new_name);
+    // }
+    if !opts.keep_name {
         path_buffer.set_file_name(uuid::Uuid::new_v4().to_string());
     }
     path_buffer.set_extension("box");

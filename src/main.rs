@@ -26,7 +26,7 @@ fn main() -> io::Result<()> {
             Err(err) => panic!("Error has occurred while trying to decrypt data: {}", err.to_string()),
         }
     }
-    
+
     Ok(())
 }
 
@@ -36,7 +36,7 @@ fn get_command() -> Command {
             .short('d')
             .long("debug")
             .action(ArgAction::SetTrue)
-            .help("Turns on debug mode")
+            .help("Turns on debug output")
         )
         .arg(Arg::new("verbose")
             .short('v')
@@ -70,14 +70,37 @@ fn get_command() -> Command {
                 .long("keep")
                 .help("Keep original file name for the encrypted file")
                 .action(ArgAction::SetTrue)
-                .conflicts_with("custom-name")
+                .conflicts_with("output-path")
             )
-            .arg(Arg::new("custom-name")
-                .short('n')
-                .long("name")
-                .help("Specify file name for encrypted file")
+            .arg(Arg::new("output-path") // TODO
+                .short('o')
+                .long("output-path")
+                .help("Specify a path for the output file. In case of multiple input paths, output paths will be specified in order of the input")
+                .action(ArgAction::Append)
+            )
+            .arg(Arg::new("overwrite") // TODO
+                .short('w')
+                .long("overwrite")
+                .help("Automatically overwrite existing files without prompting the user")
+                .action(ArgAction::SetTrue)
+            )
+            .arg(Arg::new("compression") // TODO
+                .short('z')
+                .long("compression")
+                .help("Compresses the file(s) before encryption")
                 .action(ArgAction::Set)
-                .conflicts_with("keep-name")
+                .default_value("none")
+            )
+            .arg(Arg::new("exclude") // TODO
+                .short('e')
+                .long("exclude")
+                .help("Exclude specific file patterns from being encrypted")
+                .action(ArgAction::Set)
+            )
+            .arg(Arg::new("preserve-timestamp") // TODO
+                .long("preserve-timestamp")
+                .help("Retains the original file's timestamp when creating the encrypted file")
+                .action(ArgAction::SetTrue)
             )
         )
         .subcommand(Command::new("unbox")
@@ -91,6 +114,29 @@ fn get_command() -> Command {
                 .short('R')
                 .long("recursive")
                 .help("Recursively decrypt directory")
+                .action(ArgAction::SetTrue)
+            )
+            .arg(Arg::new("output-path") // TODO
+                .short('o')
+                .long("output-path")
+                .help("Specify a path for the output file. In case of multiple input paths, output paths will be specified in order of the input")
+                .action(ArgAction::Append)
+            )
+            .arg(Arg::new("overwrite") // TODO
+                .short('w')
+                .long("overwrite")
+                .help("Automatically overwrite existing files without prompting the user")
+                .action(ArgAction::SetTrue)
+            )
+            .arg(Arg::new("check-integrity") // TODO
+                .short('i')
+                .long("check-integrity")
+                .help("Validates the integrity of the decrypted file by comparing it with an original checksum (if available)")
+                .action(ArgAction::SetTrue)
+            )
+            .arg(Arg::new("preserve-attributes") // TODO
+                .long("preserve-attributes")
+                .help("Preserves original file attributes (e.g., permissions, timestamps) when decrypting")
                 .action(ArgAction::SetTrue)
             )
         )

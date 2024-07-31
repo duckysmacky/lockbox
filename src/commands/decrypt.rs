@@ -1,9 +1,12 @@
 use std::{path::{Path, PathBuf}, fs, io};
 use crate::{log_debug, log_info, log_success, log_warn, storage};
-use crate::commands::BoxOptions;
 use crate::encryption::{file, parser};
 
-pub fn decrypt(input_path: &Path, _opts: &BoxOptions) -> io::Result<()> {
+pub struct DecryptionOptions {
+    pub output_paths: Option<Vec<PathBuf>>
+}
+
+pub fn decrypt(input_path: &Path, _opts: &DecryptionOptions) -> io::Result<()> {
     if input_path.extension().unwrap() != "box" {
         log_warn!("\"{:?}\" is not encrypted! Skipping", input_path.file_name().unwrap().to_os_string());
         return Ok(());

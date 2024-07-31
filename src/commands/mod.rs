@@ -5,23 +5,18 @@ mod path;
 use std::{path::PathBuf, io};
 use clap::ArgMatches;
 
-struct BoxOptions<'a> {
-    pub custom_name: Option<&'a String>,
-    pub keep_name: bool
-}
-
 pub fn encrypt(args: &ArgMatches) -> io::Result<()> {
     let mut file_paths: Vec<PathBuf> = Vec::new();
-    let input_paths: Vec<PathBuf> = args.get_many::<String>("path")
-        .expect("file path is required")
-        .map(|s| PathBuf::from(s))
-        .collect();
 
-    path::parse_paths(input_paths, &mut file_paths, args.get_flag("recursive"))?;
+    let options = path::PathOptions {
+        input_paths: get_paths(args, "path").expect("file path is required"),
+        recursive: args.get_flag("recursive")
+    };
+    path::parse_paths(&mut file_paths, options)?;
 
-    let options = BoxOptions {
-        custom_name: args.get_one::<String>("custom-name"),
-        keep_name: args.get_flag("keep-name")
+    let options = encrypt::EncryptionOptions {
+        keep_name: args.get_flag("keep-name"),
+        output_paths: get_paths(args, "output-path")
     };
 
     for path in file_paths {
@@ -33,18 +28,15 @@ pub fn encrypt(args: &ArgMatches) -> io::Result<()> {
 
 pub fn decrypt(args: &ArgMatches) -> io::Result<()> {
     let mut file_paths: Vec<PathBuf> = Vec::new();
-    let input_paths: Vec<PathBuf> = args.get_many::<String>("path")
-        .expect("file path is required")
-        .map(|s| PathBuf::from(s))
-        .collect();
 
-    path::parse_paths(input_paths, &mut file_paths, args.get_flag("recursive"))?;
+    let options = path::PathOptions {
+        input_paths: get_paths(args, "path").expect("file path is required"),
+        recursive: args.get_flag("recursive")
+    };
+    path::parse_paths(&mut file_paths, options)?;
 
-    // TODO temporary code
-    let temp_name = String::from("");
-    let options = BoxOptions {
-        custom_name: Some(&temp_name),
-        keep_name: false
+    let options = decrypt::DecryptionOptions {
+        output_paths: get_paths(args, "output-path")
     };
 
     for path in file_paths {
@@ -52,4 +44,16 @@ pub fn decrypt(args: &ArgMatches) -> io::Result<()> {
     }
 
     Ok(())
+}
+
+
+fn get_paths(args: &ArgMatches, arg_id: &str) -> Option<Vec<PathBuf>> {
+    if let Some(strings) = args.get_many::<String>(arg_id) {
+        return Some(strings
+            .map(|s| PathBuf::from(s))
+            .collect::<Vec<PathBuf>>()
+        )
+    }
+
+    None
 }

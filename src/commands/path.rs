@@ -3,10 +3,15 @@ use std::path::PathBuf;
 use crate::encryption::parser;
 use crate::{log_error, log_info};
 
-pub fn parse_paths(input_paths: Vec<PathBuf>, file_paths: &mut Vec<PathBuf>, recursive: bool) -> io::Result<()> {
-    for path in input_paths {
+pub struct PathOptions {
+    pub input_paths: Vec<PathBuf>,
+    pub recursive: bool
+}
+
+pub fn parse_paths(file_paths: &mut Vec<PathBuf>, opts: PathOptions) -> io::Result<()> {
+    for path in opts.input_paths {
         if path.is_dir() {
-            read_dir(&path, file_paths, recursive)?;
+            read_dir(&path, file_paths, opts.recursive)?;
         } else if path.is_file() {
             file_paths.push(path);
         } else if !path.exists() {
