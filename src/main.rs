@@ -72,7 +72,7 @@ fn get_command() -> Command {
                 .action(ArgAction::SetTrue)
                 .conflicts_with("output-path")
             )
-            .arg(Arg::new("output-path") // TODO
+            .arg(Arg::new("output-path")
                 .short('o')
                 .long("output-path")
                 .help("Specify a path for the output file. In case of multiple input paths, output paths will be specified in order of the input")
@@ -116,7 +116,7 @@ fn get_command() -> Command {
                 .help("Recursively decrypt directory")
                 .action(ArgAction::SetTrue)
             )
-            .arg(Arg::new("output-path") // TODO
+            .arg(Arg::new("output-path")
                 .short('o')
                 .long("output-path")
                 .help("Specify a path for the output file. In case of multiple input paths, output paths will be specified in order of the input")

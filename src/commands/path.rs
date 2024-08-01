@@ -1,5 +1,5 @@
-use std::{fs, io, path::Path, ffi::OsString};
-use std::path::PathBuf;
+use std::{fs, io, path::{Path, PathBuf}, ffi::OsString};
+
 use crate::encryption::parser;
 use crate::{log_error, log_info};
 
