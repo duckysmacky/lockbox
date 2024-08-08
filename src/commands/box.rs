@@ -23,12 +23,12 @@ pub fn encrypt(input_path: &Path, opts: &mut EncryptionOptions) -> io::Result<()
     // get needed data
     let file_data = file::read_bytes(file_path)?;
     let checksum = parser::generate_checksum(&file_data);
-    let key = storage::get_key()?;
+    let key = storage::keys::get();
     let nonce = cipher::generate_nonce();
     let header = parser::generate_header(file_path, checksum, nonce).expect("Error generating header");
 
     log_info!("Saving keys");
-    storage::save_key(&key)?;
+    storage::keys::save(key);
 
     log_info!("Converting file");
     // change the file to be .box instead

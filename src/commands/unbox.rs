@@ -20,7 +20,7 @@ pub fn decrypt(input_path: &Path, opts: &mut DecryptionOptions) -> io::Result<()
     let file_path = path_buffer.as_path();
 
     log_info!("Reading data");
-    let key = storage::get_key()?;
+    let key = storage::keys::get();
     let (header, body) = parser::parse_file(file_path, key)?;
     log_debug!("Got header: {:?}", header);
 

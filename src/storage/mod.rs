@@ -1,42 +1,57 @@
-use std::{
-    io::{Read, Result, Write},
-    fs::File
-};
-use crate::{log_info, log_warn};
-use crate::encryption::cipher;
-use crate::encryption::cipher::Key;
+pub mod keys;
 
-// TODO - add an actual storage
-const KEY_PATH: &str = "temp/key.txt";
+use std::{path::PathBuf, env, fs};
 
-pub fn save_key(key: &Key) -> Result<()> {
-    let mut file = File::create(KEY_PATH)?;
+fn get_data_dir() -> PathBuf {
+    let path = if cfg!(target_os = "windows") {
+        let mut path = PathBuf::from(env::var("APPDATA").expect("Could not retrieve APPDATA environment variable"));
+        path.push("Lockbox");
+        path.push("Data");
+        path
+    } else if cfg!(target_os = "macos") {
+        let mut path = PathBuf::from(env::var("HOME").expect("Could not retrieve HOME environment variable"));
+        path.push("Library");
+        path.push("Application Support");
+        path.push("Lockbox");
+        path
+    } else { // Assuming Linux or other Unix-like OS
+        let mut path = PathBuf::from(env::var("HOME").expect("Could not retrieve HOME environment variable"));
+        path.push(".local");
+        path.push("share");
+        path.push("lockbox");
+        path
+    };
 
-    file.write_all(key)?;
-    log_info!("Saved key");
+    if !path.exists() {
+        fs::create_dir_all(&path).expect("Failed to create Data directory");
+    }
 
-    file.flush()?;
-    Ok(())
+    path
 }
 
-pub fn get_key() -> Result<Key> {
-    let mut file = match File::open(KEY_PATH) {
-        Ok(f) => {
-            log_info!("Found key");
-            f
-        },
-        Err(_) => {
-            log_warn!("Key not found!");
-            log_info!("Generating new key");
-            let key = cipher::generate_key();
-            save_key(&key)?;
-            File::open(KEY_PATH)?
-        }
+#[allow(dead_code)]
+fn get_config_dir() -> PathBuf {
+    let path = if cfg!(target_os = "windows") {
+        let mut path = PathBuf::from(env::var("APPDATA").expect("Could not retrieve APPDATA environment variable"));
+        path.push("Lockbox");
+        path.push("Config");
+        path
+    } else if cfg!(target_os = "macos") {
+        let mut path = PathBuf::from(env::var("HOME").expect("Could not retrieve HOME environment variable"));
+        path.push("Library");
+        path.push("Preferences");
+        path.push("Lockbox");
+        path
+    } else { // Assuming Linux or other Unix-like OS
+        let mut path = PathBuf::from(env::var("HOME").expect("Could not retrieve HOME environment variable"));
+        path.push(".config");
+        path.push("lockbox");
+        path
     };
-    let mut key = [0u8; 32];
 
-    file.read_exact(&mut key)?;
+    if !path.exists() {
+        fs::create_dir_all(&path).expect("Failed to create Config directory");
+    }
 
-    file.flush()?;
-    Ok(key)
+    path
 }
