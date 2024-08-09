@@ -8,7 +8,8 @@ use std::collections::VecDeque;
 use clap::ArgMatches;
 use crate::{log_error, log_success};
 
-pub fn r#box(args: &ArgMatches) {
+pub fn r#box(args: &ArgMatches) -> u32 {
+    let mut total_files: u32 = 0;
     let mut file_paths: Vec<PathBuf> = Vec::new();
 
     let options = path::PathOptions {
@@ -24,13 +25,19 @@ pub fn r#box(args: &ArgMatches) {
 
     for path in file_paths {
         match r#box::encrypt(path.as_path(), &mut options) {
-            Ok(_) => log_success!("Successfully encrypted {:?}", path.file_name().unwrap().to_os_string()),
+            Ok(_) => {
+                log_success!("Successfully encrypted {:?}", path.file_name().unwrap().to_os_string());
+                total_files += 1;
+            },
             Err(err) => log_error!("An error has occurred while trying to encrypt {:?}: {}", path.file_name().unwrap().to_os_string(), err),
         }
     }
+
+    total_files
 }
 
-pub fn unbox(args: &ArgMatches) {
+pub fn unbox(args: &ArgMatches) -> u32 {
+    let mut total_files: u32 = 0;
     let mut file_paths: Vec<PathBuf> = Vec::new();
 
     let options = path::PathOptions {
@@ -45,10 +52,15 @@ pub fn unbox(args: &ArgMatches) {
 
     for path in file_paths {
         match unbox::decrypt(path.as_path(), &mut options) {
-            Ok(_) => log_success!("Successfully decrypted {:?}", path.file_name().unwrap().to_os_string()),
+            Ok(_) => {
+                log_success!("Successfully decrypted {:?}", path.file_name().unwrap().to_os_string());
+                total_files += 1;
+            },
             Err(err) => log_error!("An error has occurred while trying to decrypt {:?}: {}", path.file_name().unwrap().to_os_string(), err),
         }
     }
+
+    total_files
 }
 
 pub fn key(args: &ArgMatches) {

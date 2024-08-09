@@ -4,21 +4,25 @@ mod logger;
 mod storage;
 
 use std::io::{self};
+use std::time::Instant;
 use clap::{command, Arg, ArgAction, Command};
 
 fn main() -> io::Result<()> {
+    let start_time = Instant::now();
     let args = get_command().get_matches();
 
     logger::configure_logger(&args);
 
     /* BOX */
     if let Some(args) = args.subcommand_matches("box") {
-        commands::r#box(args)
+        let file_count = commands::r#box(args);
+        log_success!("Total files encrypted: {}", file_count);
     }
 
     /* UNBOX */
     if let Some(args) = args.subcommand_matches("unbox") {
-        commands::unbox(args)
+        let file_count = commands::unbox(args);
+        log_success!("Total files decrypted: {}", file_count);
     }
 
     /* KEY */
@@ -26,6 +30,8 @@ fn main() -> io::Result<()> {
         commands::key(args)
     }
 
+    let duration = start_time.elapsed();
+    log_success!("Time taken: {:.2?}", duration);
     Ok(())
 }
 
