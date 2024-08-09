@@ -1,7 +1,7 @@
 use std::{path::{Path, PathBuf}, fs, io};
 use std::collections::VecDeque;
 use crate::encryption::{cipher, file, parser};
-use crate::{log_debug, log_info, log_success, log_warn, storage};
+use crate::{log_debug, log_success, log_warn, storage};
 
 pub struct EncryptionOptions {
     pub keep_name: bool,
@@ -14,7 +14,7 @@ pub fn encrypt(input_path: &Path, opts: &mut EncryptionOptions) -> io::Result<()
         return Ok(());
     }
 
-    log_success!("Boxing file: {:?}", input_path.file_name().unwrap().to_os_string());
+    log_success!("Encrypting file: {:?}", input_path.file_name().unwrap().to_os_string());
     let mut path_buffer = PathBuf::from(input_path);
 
     // get needed paths
@@ -23,14 +23,11 @@ pub fn encrypt(input_path: &Path, opts: &mut EncryptionOptions) -> io::Result<()
     // get needed data
     let file_data = file::read_bytes(file_path)?;
     let checksum = parser::generate_checksum(&file_data);
-    let key = storage::keys::get();
+    let key = storage::keys::get_key();
     let nonce = cipher::generate_nonce();
     let header = parser::generate_header(file_path, checksum, nonce).expect("Error generating header");
 
-    log_info!("Saving keys");
-    storage::keys::save(key);
-
-    log_info!("Converting file");
+    log_debug!("Converting file");
     // change the file to be .box instead
     fs::remove_file(file_path)?;
 
@@ -51,10 +48,10 @@ pub fn encrypt(input_path: &Path, opts: &mut EncryptionOptions) -> io::Result<()
     path_buffer.set_extension("box");
     let file_path = path_buffer.as_path();
 
-    log_info!("Encrypting data");
+    log_debug!("Encrypting data");
     let body = cipher::encrypt(&key, &nonce, &file_data).expect("Error encrypting file");
 
-    log_info!("Writing data");
+    log_debug!("Writing data");
     parser::write_file(file_path, header, body)?;
 
     Ok(())

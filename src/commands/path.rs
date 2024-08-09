@@ -8,10 +8,13 @@ pub struct PathOptions {
     pub recursive: bool
 }
 
-pub fn parse_paths(file_paths: &mut Vec<PathBuf>, opts: PathOptions) -> io::Result<()> {
+pub fn parse_paths(file_paths: &mut Vec<PathBuf>, opts: PathOptions) {
     for path in opts.input_paths {
         if path.is_dir() {
-            read_dir(&path, file_paths, opts.recursive)?;
+            if let Err(err) = read_dir(&path, file_paths, opts.recursive) {
+                log_error!("Unable to read directory \"{}\": {}", path.display(), err);
+                continue;
+            }
         } else if path.is_file() {
             file_paths.push(path);
         } else if !path.exists() {
@@ -19,15 +22,13 @@ pub fn parse_paths(file_paths: &mut Vec<PathBuf>, opts: PathOptions) -> io::Resu
 
             match search_for_original(path.parent().unwrap(), target_name) {
                 Ok(box_path) => file_paths.push(box_path),
-                Err(_) => {
-                    log_error!("Path \"{}\" doesn't exist!", path.display());
+                Err(err) => {
+                    log_error!("Unable to find \"{}\": {}", path.display(), err);
                     continue;
                 }
             }
         }
     }
-
-    Ok(())
 }
 
 fn read_dir(dir_path: &Path, file_paths: &mut Vec<PathBuf>, recursive: bool) -> io::Result<()> {

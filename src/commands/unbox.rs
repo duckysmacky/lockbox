@@ -1,6 +1,6 @@
 use std::{path::{Path, PathBuf}, collections::VecDeque, fs, io};
 
-use crate::{log_debug, log_info, log_success, log_warn, storage};
+use crate::{log_debug, log_success, log_warn, storage};
 use crate::encryption::{file, parser};
 
 pub struct DecryptionOptions {
@@ -13,18 +13,18 @@ pub fn decrypt(input_path: &Path, opts: &mut DecryptionOptions) -> io::Result<()
         return Ok(());
     }
 
-    log_success!("Unboxing file: {:?}", input_path.file_name().unwrap().to_os_string());
+    log_success!("Decrypting file: {:?}", input_path.file_name().unwrap().to_os_string());
     let mut path_buffer = PathBuf::from(input_path);
 
     // get needed paths
     let file_path = path_buffer.as_path();
 
-    log_info!("Reading data");
-    let key = storage::keys::get();
+    log_debug!("Reading data");
+    let key = storage::keys::get_key();
     let (header, body) = parser::parse_file(file_path, key)?;
     log_debug!("Got header: {:?}", header);
 
-    log_info!("Validating checksum");
+    log_debug!("Validating checksum");
     let new_checksum = parser::generate_checksum(&body);
     if new_checksum != header.checksum {
         return Err(io::Error::new(
@@ -33,7 +33,7 @@ pub fn decrypt(input_path: &Path, opts: &mut DecryptionOptions) -> io::Result<()
         );
     }
 
-    log_info!("Changing file");
+    log_debug!("Changing file");
     // change the file to its original form
     fs::remove_file(file_path)?;
 
@@ -59,7 +59,7 @@ pub fn decrypt(input_path: &Path, opts: &mut DecryptionOptions) -> io::Result<()
 
     let file_path = path_buffer.as_path();
 
-    log_info!("Writing data");
+    log_debug!("Writing data");
     file::write_bytes(&file_path, &body)?;
 
     Ok(())

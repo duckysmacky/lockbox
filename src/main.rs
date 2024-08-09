@@ -13,18 +13,17 @@ fn main() -> io::Result<()> {
 
     // BOX
     if let Some(args) = args.subcommand_matches("box") {
-        match commands::encrypt(args) {
-            Ok(_) => log_success!("Encryption finished"),
-            Err(err) => panic!("Error has occurred while trying to encrypt data: {}", err.to_string()),
-        }
+        commands::encrypt(args)
     }
 
     // UNBOX
     if let Some(args) = args.subcommand_matches("unbox") {
-        match commands::decrypt(args) {
-            Ok(_) => log_success!("Decryption finished"),
-            Err(err) => panic!("Error has occurred while trying to decrypt data: {}", err.to_string()),
-        }
+        commands::decrypt(args)
+    }
+
+    // KEY
+    if let Some(_args) = args.subcommand_matches("key") {
+        todo!()
     }
 
     Ok(())
@@ -32,11 +31,12 @@ fn main() -> io::Result<()> {
 
 fn get_command() -> Command {
     command!()
+        /* BASE COMMAND */
         .arg(Arg::new("debug")
             .short('d')
             .long("debug")
             .action(ArgAction::SetTrue)
-            .help("Turns on debug output")
+            .help("Turns on extensive debug output information")
         )
         .arg(Arg::new("verbose")
             .short('v')
@@ -52,6 +52,7 @@ fn get_command() -> Command {
             .action(ArgAction::SetTrue)
             .conflicts_with("verbose")
         )
+        /* BOX SUBCOMMAND */
         .subcommand(Command::new("box")
             .about("Encrypt specified files into a special file type")
             .arg(Arg::new("path")
@@ -103,6 +104,7 @@ fn get_command() -> Command {
                 .action(ArgAction::SetTrue)
             )
         )
+        /* UNBOX SUBCOMMAND */
         .subcommand(Command::new("unbox")
             .about("Decrypt specified files from a special file type")
             .arg(Arg::new("path")
@@ -138,6 +140,20 @@ fn get_command() -> Command {
                 .long("preserve-attributes")
                 .help("Preserves original file attributes (e.g., permissions, timestamps) when decrypting")
                 .action(ArgAction::SetTrue)
+            )
+        )
+        /* KEY SUBCOMMAND */
+        .subcommand(Command::new("key")
+            .about("Control encryption keys")
+            /* GENERATE KEY SUBCOMMAND */
+            .subcommand(Command::new("new")
+                .about("Generate a new encryption key")
+                .aliases(["generate", "gen"])
+            )
+            /* REMOVE KEY SUBCOMMAND */
+            .subcommand(Command::new("delete")
+                .about("Delete old encryption key")
+                .aliases(["del", "remove", "reset"])
             )
         )
 }
