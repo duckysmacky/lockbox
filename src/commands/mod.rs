@@ -1,13 +1,14 @@
 mod r#box;
 mod unbox;
 mod path;
+mod key;
 
 use std::path::PathBuf;
 use std::collections::VecDeque;
 use clap::ArgMatches;
 use crate::{log_error, log_success};
 
-pub fn encrypt(args: &ArgMatches) {
+pub fn r#box(args: &ArgMatches) {
     let mut file_paths: Vec<PathBuf> = Vec::new();
 
     let options = path::PathOptions {
@@ -29,7 +30,7 @@ pub fn encrypt(args: &ArgMatches) {
     }
 }
 
-pub fn decrypt(args: &ArgMatches) {
+pub fn unbox(args: &ArgMatches) {
     let mut file_paths: Vec<PathBuf> = Vec::new();
 
     let options = path::PathOptions {
@@ -50,6 +51,24 @@ pub fn decrypt(args: &ArgMatches) {
     }
 }
 
+pub fn key(args: &ArgMatches) {
+    /* NEW */
+    if let Some(_args) = args.subcommand_matches("new") {
+        let options = key::NewOptions {};
+        match key::new_key(&options) {
+            Ok(_) => log_success!("Successfully generated a new encryption key"),
+            Err(err) => log_error!("An error has occurred while trying to generate a new key: {}", err)
+        }
+    }
+    /* DELETE */
+    if let Some(_args) = args.subcommand_matches("delete") {
+        let options = key::DeleteOptions {};
+        match key::delete_key(&options) {
+            Ok(_) => log_success!("Successfully deleted encryption key"),
+            Err(err) => log_error!("An error has occurred while trying to delete a key: {}", err)
+        }
+    }
+}
 
 fn get_path_vec(args: &ArgMatches, arg_id: &str) -> Option<Vec<PathBuf>> {
     if let Some(strings) = args.get_many::<String>(arg_id) {

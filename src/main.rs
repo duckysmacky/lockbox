@@ -11,19 +11,19 @@ fn main() -> io::Result<()> {
 
     logger::configure_logger(&args);
 
-    // BOX
+    /* BOX */
     if let Some(args) = args.subcommand_matches("box") {
-        commands::encrypt(args)
+        commands::r#box(args)
     }
 
-    // UNBOX
+    /* UNBOX */
     if let Some(args) = args.subcommand_matches("unbox") {
-        commands::decrypt(args)
+        commands::unbox(args)
     }
 
-    // KEY
-    if let Some(_args) = args.subcommand_matches("key") {
-        todo!()
+    /* KEY */
+    if let Some(args) = args.subcommand_matches("key") {
+        commands::key(args)
     }
 
     Ok(())
