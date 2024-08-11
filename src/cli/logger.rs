@@ -1,7 +1,6 @@
 use std::{
     sync::{Arc, Mutex},
-    string::String,
-    cmp::PartialEq,
+    string::String, cmp::PartialEq,
     fmt
 };
 
@@ -85,7 +84,7 @@ pub fn configure_logger(args: &ArgMatches) {
 macro_rules! log_info {
     ($($arg:tt)*) => {
         {
-            use crate::logger::*;
+            use crate::cli::logger::*;
             let logger = LOGGER.lock().unwrap();
             logger.log(LogType::INFO, format_args!($($arg)*));
         }
@@ -96,7 +95,7 @@ macro_rules! log_info {
 macro_rules! log_warn {
     ($($arg:tt)*) => {
         {
-            use crate::logger::*;
+            use crate::cli::logger::*;
             let logger = LOGGER.lock().unwrap();
             logger.log(LogType::WARNING, format_args!($($arg)*));
         }
@@ -107,7 +106,7 @@ macro_rules! log_warn {
 macro_rules! log_success {
     ($($arg:tt)*) => {
         {
-            use crate::logger::*;
+            use crate::cli::logger::*;
             let logger = LOGGER.lock().unwrap();
             logger.log(LogType::SUCCESS, format_args!($($arg)*));
         }
@@ -118,7 +117,7 @@ macro_rules! log_success {
 macro_rules! log_error {
     ($($arg:tt)*) => {
         {
-            use crate::logger::*;
+            use crate::cli::logger::*;
             let logger = LOGGER.lock().unwrap();
             logger.log(LogType::ERROR, format_args!($($arg)*));
         }
@@ -129,7 +128,7 @@ macro_rules! log_error {
 macro_rules! log_debug {
     ($($arg:tt)*) => {
         {
-            use crate::logger::*;
+            use crate::cli::logger::*;
             let logger = LOGGER.lock().unwrap();
             logger.log(LogType::DEBUG, format_args!($($arg)*));
         }
@@ -140,7 +139,7 @@ macro_rules! log_debug {
 macro_rules! log_fatal {
     ($($arg:tt)*) => {
         {
-            use crate::logger::*;
+            use crate::cli::logger::*;
             let logger = LOGGER.lock().unwrap();
             logger.log(LogType::FATAL, format_args!($($arg)*));
             panic!()

@@ -1,18 +1,18 @@
 # LockBox
 
-A fast and secure data encryption program, which focuses on speed, safety and user-friendliness
+A data encryption program, which focuses on speed, safety and user-friendliness
 
 *The project is still very work-in-progress and the mentioned features could very well change during development*
 
 ## About
 
-Lockbox aims to be cross-platform lightweight solution for file encryption
+Lockbox aims to be cross-platform a lightweight solution for file encryption
 
 Lockbox is mainly using the **ChaCha20** algorithm with **Poly1305** universal hash function to perform encryption
 operations. It proved to be much more safe and fast than the most popular **AES** algorithm
 
 The encrypted files are stored in a custom `.box` file format. This enables the ability to embed additional safety
-utilities into the encrypted data, such as checksums, to check file's integrity. It also sets lockbox apart from its
+utilities into the encrypted data, such as checksums, to check the file's integrity. It also sets lockbox apart from its
 competitors
 
 The general idea behind this project is to standardise file encryption by making a universal, cross-platform and

@@ -1,41 +1,10 @@
-mod commands;
-mod encryption;
-mod logger;
-mod storage;
+pub mod commands;
+pub mod logger;
+pub mod path;
 
-use std::io::{self};
-use std::time::Instant;
-use clap::{command, Arg, ArgAction, Command};
+use clap::{Arg, ArgAction, Command, command};
 
-fn main() -> io::Result<()> {
-    let start_time = Instant::now();
-    let args = get_command().get_matches();
-
-    logger::configure_logger(&args);
-
-    /* BOX */
-    if let Some(args) = args.subcommand_matches("box") {
-        let file_count = commands::r#box(args);
-        log_success!("Total files encrypted: {}", file_count);
-    }
-
-    /* UNBOX */
-    if let Some(args) = args.subcommand_matches("unbox") {
-        let file_count = commands::unbox(args);
-        log_success!("Total files decrypted: {}", file_count);
-    }
-
-    /* KEY */
-    if let Some(args) = args.subcommand_matches("key") {
-        commands::key(args)
-    }
-
-    let duration = start_time.elapsed();
-    log_success!("Time taken: {:.2?}", duration);
-    Ok(())
-}
-
-fn get_command() -> Command {
+pub fn get_command() -> Command {
     command!()
         /* BASE COMMAND */
         .arg(Arg::new("debug")

@@ -1,14 +1,12 @@
-mod r#box;
-mod unbox;
-mod path;
-mod key;
-
-use std::path::PathBuf;
-use std::collections::VecDeque;
+use std::{
+    collections::VecDeque, path::PathBuf,
+    io
+};
 use clap::ArgMatches;
-use crate::{log_error, log_success};
+use crate::cli::path;
+use crate::{decrypt, DecryptionOptions, delete_key, DeleteKeyOptions, encrypt, EncryptionOptions, KeyOptions, log_error, log_success, new_key, NewKeyOptions};
 
-pub fn r#box(args: &ArgMatches) -> u32 {
+pub fn r#box(args: &ArgMatches) -> io::Result<u32> {
     let mut total_files: u32 = 0;
     let mut file_paths: Vec<PathBuf> = Vec::new();
 
@@ -18,13 +16,13 @@ pub fn r#box(args: &ArgMatches) -> u32 {
     };
     path::parse_paths(&mut file_paths, options);
 
-    let mut options = r#box::EncryptionOptions {
+    let mut options = EncryptionOptions {
         keep_name: args.get_flag("keep-name"),
         output_paths: get_path_deque(args, "output-path")
     };
 
     for path in file_paths {
-        match r#box::encrypt(path.as_path(), &mut options) {
+        match encrypt(path.as_path(), &mut options) {
             Ok(_) => {
                 log_success!("Successfully encrypted {:?}", path.file_name().unwrap().to_os_string());
                 total_files += 1;
@@ -33,10 +31,10 @@ pub fn r#box(args: &ArgMatches) -> u32 {
         }
     }
 
-    total_files
+    Ok(total_files)
 }
 
-pub fn unbox(args: &ArgMatches) -> u32 {
+pub fn unbox(args: &ArgMatches) -> io::Result<u32> {
     let mut total_files: u32 = 0;
     let mut file_paths: Vec<PathBuf> = Vec::new();
 
@@ -46,12 +44,12 @@ pub fn unbox(args: &ArgMatches) -> u32 {
     };
     path::parse_paths(&mut file_paths, options);
 
-    let mut options = unbox::DecryptionOptions {
+    let mut options = DecryptionOptions {
         output_paths: get_path_deque(args, "output-path")
     };
 
     for path in file_paths {
-        match unbox::decrypt(path.as_path(), &mut options) {
+        match decrypt(path.as_path(), &mut options) {
             Ok(_) => {
                 log_success!("Successfully decrypted {:?}", path.file_name().unwrap().to_os_string());
                 total_files += 1;
@@ -60,22 +58,26 @@ pub fn unbox(args: &ArgMatches) -> u32 {
         }
     }
 
-    total_files
+    Ok(total_files)
 }
 
 pub fn key(args: &ArgMatches) {
     /* NEW */
     if let Some(_args) = args.subcommand_matches("new") {
-        let options = key::NewOptions {};
-        match key::new_key(&options) {
+        let options = NewKeyOptions {
+            key_options: KeyOptions {}
+        };
+        match new_key(&options) {
             Ok(_) => log_success!("Successfully generated a new encryption key"),
             Err(err) => log_error!("An error has occurred while trying to generate a new key: {}", err)
         }
     }
     /* DELETE */
     if let Some(_args) = args.subcommand_matches("delete") {
-        let options = key::DeleteOptions {};
-        match key::delete_key(&options) {
+        let options = DeleteKeyOptions {
+            key_options: KeyOptions {}
+        };
+        match delete_key(&options) {
             Ok(_) => log_success!("Successfully deleted encryption key"),
             Err(err) => log_error!("An error has occurred while trying to delete a key: {}", err)
         }

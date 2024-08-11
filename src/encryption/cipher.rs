@@ -1,5 +1,6 @@
 use chacha20poly1305::{
-    aead::{Aead, KeyInit}, AeadCore, ChaCha20Poly1305, Error
+    aead::{Aead, KeyInit},
+    AeadCore, ChaCha20Poly1305, Error
 };
 use rand::rngs::OsRng;
 
