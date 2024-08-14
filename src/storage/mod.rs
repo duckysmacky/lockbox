@@ -1,4 +1,5 @@
 pub mod keys;
+mod verification;
 
 use std::{path::PathBuf, env, fs};
 

@@ -2,42 +2,47 @@ use std::{fs::File, io, io::Write};
 use std::io::BufReader;
 
 use serde::{Deserialize, Serialize};
-use crate::{log_debug, log_error, log_fatal, log_info, log_warn};
+use crate::{log_debug, log_error, log_fatal, log_info, log_success, log_warn};
 use crate::encryption::cipher::{self, Key};
 use crate::storage::get_data_dir;
+use crate::storage::verification;
 
 #[derive(Serialize, Deserialize, Debug)]
-struct KeysFile {
-    key_data: Option<KeyData>
+pub struct KeysFile {
+    pub key_data: Option<KeyData>
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-struct KeyData {
-    key: Key
+pub struct KeyData {
+    pub key: Key,
+    pub password_hash: String,
 }
 
-pub fn get_key() -> Key {
-    log_debug!("Getting key");
+pub fn get_key() -> KeyData {
+    log_debug!("Getting key data");
 
     match get_keys_file() {
         Ok(keys_file) => {
             return if let Some(key_data) = keys_file.key_data {
-                key_data.key
+                key_data
             } else {
                 log_error!("Key doesn't exist");
-                generate_new_key();
+                log_success!("Creating a new key");
+                create_new_key();
                 get_key()
             }
         },
         Err(err) => {
             if err.kind() == io::ErrorKind::NotFound {
                 log_error!("Key doesn't exist");
-                generate_new_key();
-                return get_key()
+                log_success!("Creating a new key");
+                create_new_key();
+                get_key()
+            } else {
+                log_fatal!("An error occurred while trying to get key file data: {}", err);
             }
-            log_fatal!("An error occurred while trying to get key: {}", err);
         }
-    };
+    }
 }
 
 pub fn delete_key() {
@@ -54,24 +59,28 @@ pub fn delete_key() {
     }
 }
 
-pub fn generate_new_key() {
+pub fn create_new_key() {
     log_debug!("Generating new key");
     let key = cipher::generate_key();
+    let password = verification::prompt_password();
 
-    let key_data = KeyData { key };
+    let key_data = KeyData {
+        key,
+        password_hash: password,
+    };
     let keys_file = KeysFile {
         key_data: Some(key_data)
     };
 
     match write_keys_file(keys_file) {
-        Ok(_) => log_info!("Saved generated key"),
+        Ok(_) => log_info!("Saved a new key"),
         Err(err) => {
-            log_fatal!("An error occurred while trying to save key: {}", err);
+            log_fatal!("An error occurred while trying to save the new key: {}", err);
         }
     }
 }
 
-fn write_keys_file(keys_file: KeysFile) -> io::Result<()> {
+pub fn write_keys_file(keys_file: KeysFile) -> io::Result<()> {
     log_debug!("Writing data to keys file: {:?}", keys_file);
 
     let mut keys_path = get_data_dir();
@@ -90,7 +99,7 @@ fn write_keys_file(keys_file: KeysFile) -> io::Result<()> {
     Ok(())
 }
 
-fn get_keys_file() -> io::Result<KeysFile> {
+pub fn get_keys_file() -> io::Result<KeysFile> {
     log_debug!("Getting keys file data");
 
     let mut keys_path = get_data_dir();

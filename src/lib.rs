@@ -51,7 +51,7 @@ pub fn encrypt(input_path: &Path, opts: &mut options::EncryptionOptions) -> Resu
 
     // get needed data
     let file_data = io::read_bytes(file_path).map_err(Error::from)?;
-    let key = keys::get_key();
+    let key = keys::get_key().key;
     let nonce = cipher::generate_nonce();
     let header = header::generate_header(file_path, &file_data, &nonce);
 
@@ -97,7 +97,7 @@ pub fn decrypt(input_path: &Path, opts: &mut options::DecryptionOptions) -> Resu
     let file_path = path_buffer.as_path();
 
     log_debug!("Reading data");
-    let key = keys::get_key();
+    let key = keys::get_key().key;
     let box_file = parser::parse_file(file_path)?;
     let header = box_file.header;
     let body = cipher::decrypt(&key, &header.nonce, &box_file.body);
@@ -141,7 +141,7 @@ pub fn decrypt(input_path: &Path, opts: &mut options::DecryptionOptions) -> Resu
 
 pub fn new_key(_options: &options::NewKeyOptions) -> Result<()> {
     log_success!("Generating a new encryption key");
-    keys::generate_new_key();
+    keys::create_new_key();
     Ok(())
 }
 
