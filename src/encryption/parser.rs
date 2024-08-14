@@ -5,7 +5,6 @@ use std::{
     ffi::OsString,
     path::Path
 };
-
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use super::cipher::{self, Key, Nonce};
@@ -67,23 +66,28 @@ pub fn write_file(path: &Path, header: BoxHeader, body: Vec<u8>) -> io::Result<(
     Ok(())
 }
 
-pub fn generate_header(path: &Path, checksum: Checksum, nonce: Nonce) -> Option<BoxHeader> {
+pub fn generate_header(path: &Path, checksum: Checksum, nonce: Nonce) -> BoxHeader {
     let file_data = fs::metadata(path).expect("Unable to get file metadata");
 
     let mut header = BoxHeader {
         magic: box_data::MAGIC,
         version: box_data::VERSION,
         metadata_length: 0,
-        original_filename: path.file_stem()?.to_os_string(),
-        original_extension: path.extension()?.to_os_string(),
+        original_filename: match path.file_stem() {
+            None => OsString::from(""),
+            Some(file_stem) => file_stem.to_os_string()
+        },
+        original_extension: match path.extension() {
+            None => OsString::from(""),
+            Some(extension) => extension.to_os_string()
+        },
         original_size: file_data.file_size(),
         checksum,
         nonce
     };
 
     header.metadata_length = get_metadata_len(&header);
-
-    Some(header)
+    header
 }
 
 pub fn get_header(path: &Path) -> io::Result<BoxHeader> {
@@ -107,7 +111,7 @@ pub fn generate_checksum(data: &[u8]) -> Checksum {
     let mut checksum = [0u8; 32];
 
     checksum.copy_from_slice(&result);
-    
+
     checksum
 }
 

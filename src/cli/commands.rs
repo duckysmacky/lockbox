@@ -4,7 +4,8 @@ use std::{
 };
 use clap::ArgMatches;
 use crate::cli::path;
-use crate::{decrypt, DecryptionOptions, delete_key, DeleteKeyOptions, encrypt, EncryptionOptions, KeyOptions, log_error, log_success, new_key, NewKeyOptions};
+use crate::options;
+use crate::{decrypt, delete_key, encrypt, log_error, log_success, new_key};
 
 pub fn r#box(args: &ArgMatches) -> io::Result<u32> {
     let mut total_files: u32 = 0;
@@ -16,7 +17,7 @@ pub fn r#box(args: &ArgMatches) -> io::Result<u32> {
     };
     path::parse_paths(&mut file_paths, options);
 
-    let mut options = EncryptionOptions {
+    let mut options = options::EncryptionOptions {
         keep_name: args.get_flag("keep-name"),
         output_paths: get_path_deque(args, "output-path")
     };
@@ -44,7 +45,7 @@ pub fn unbox(args: &ArgMatches) -> io::Result<u32> {
     };
     path::parse_paths(&mut file_paths, options);
 
-    let mut options = DecryptionOptions {
+    let mut options = options::DecryptionOptions {
         output_paths: get_path_deque(args, "output-path")
     };
 
@@ -64,8 +65,8 @@ pub fn unbox(args: &ArgMatches) -> io::Result<u32> {
 pub fn key(args: &ArgMatches) {
     /* NEW */
     if let Some(_args) = args.subcommand_matches("new") {
-        let options = NewKeyOptions {
-            key_options: KeyOptions {}
+        let options = options::NewKeyOptions {
+            key_options: options::KeyOptions {}
         };
         match new_key(&options) {
             Ok(_) => log_success!("Successfully generated a new encryption key"),
@@ -74,8 +75,8 @@ pub fn key(args: &ArgMatches) {
     }
     /* DELETE */
     if let Some(_args) = args.subcommand_matches("delete") {
-        let options = DeleteKeyOptions {
-            key_options: KeyOptions {}
+        let options = options::DeleteKeyOptions {
+            key_options: options::KeyOptions {}
         };
         match delete_key(&options) {
             Ok(_) => log_success!("Successfully deleted encryption key"),

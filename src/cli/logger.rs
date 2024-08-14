@@ -39,9 +39,10 @@ impl Logger {
 
     pub fn log(&self, log_type: LogType, message: fmt::Arguments<'_>) {
         if log_type == LogType::FATAL {
-            println!("[{}] {}", get_icon(log_type), message);
+            eprintln!("[{}] {}", get_icon(log_type), message);
             return;
         }
+
         if log_type == LogType::DEBUG {
             if !self.debug {
                 return;
@@ -49,17 +50,24 @@ impl Logger {
             println!("[{}] {}", get_icon(log_type), message);
             return;
         }
+
         match self.mode {
             LoggerMode::QUIET => {
                 return;
             },
             LoggerMode::NORMAL => {
-                if log_type == LogType::SUCCESS || log_type == LogType::ERROR {
+                if log_type == LogType::SUCCESS {
                     println!("[{}] {}", get_icon(log_type), message);
+                } else if log_type == LogType::ERROR {
+                    eprintln!("[{}] {}", get_icon(log_type), message);
                 }
             },
             LoggerMode::VERBOSE => {
-                println!("[{}] {}", get_icon(log_type), message);
+                if log_type == LogType::ERROR {
+                    eprintln!("[{}] {}", get_icon(log_type), message);
+                } else {
+                    println!("[{}] {}", get_icon(log_type), message);
+                }
             },
         }
     }

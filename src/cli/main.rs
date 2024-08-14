@@ -1,11 +1,11 @@
 use std::{io, time::Instant};
-use lockbox::{cli, log_fatal, log_success};
+use lockbox::{cli::{self, commands, logger}, log_fatal, log_success};
 
 fn main() -> io::Result<()> {
     let start_time = Instant::now();
     let args = cli::get_command().get_matches();
 
-    cli::logger::configure_logger(&args);
+    logger::configure_logger(&args);
 
     /* BOX */
     if let Some(args) = args.subcommand_matches("box") {
@@ -17,7 +17,7 @@ fn main() -> io::Result<()> {
 
     /* UNBOX */
     if let Some(args) = args.subcommand_matches("unbox") {
-        match cli::commands::unbox(args) {
+        match commands::unbox(args) {
             Ok(file_count) => log_success!("Total files decrypted: {}", file_count),
             Err(err) => log_fatal!("Decryption failed: {}", err)
         }
@@ -25,7 +25,7 @@ fn main() -> io::Result<()> {
 
     /* KEY */
     if let Some(args) = args.subcommand_matches("key") {
-        cli::commands::key(args)
+        commands::key(args)
     }
 
     let duration = start_time.elapsed();
