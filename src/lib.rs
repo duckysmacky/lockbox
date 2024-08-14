@@ -1,6 +1,7 @@
 use std::fs;
 use std::path::{Path, PathBuf};
-use crate::encryption::{cipher, file, parser};
+use crate::encryption::{checksum, cipher};
+use crate::file::{parser, io, header};
 use crate::storage::keys;
 
 pub use crate::error::{Error, Result};
@@ -9,6 +10,7 @@ pub mod cli;
 mod encryption;
 mod storage;
 mod error;
+mod file;
 
 pub mod options {
     use std::{collections::VecDeque, path::PathBuf};
@@ -48,11 +50,10 @@ pub fn encrypt(input_path: &Path, opts: &mut options::EncryptionOptions) -> Resu
     let file_path = path_buffer.as_path();
 
     // get needed data
-    let file_data = file::read_bytes(file_path).map_err(Error::from)?;
-    let checksum = parser::generate_checksum(&file_data);
+    let file_data = io::read_bytes(file_path).map_err(Error::from)?;
     let key = keys::get_key();
     let nonce = cipher::generate_nonce();
-    let header = parser::generate_header(file_path, checksum, nonce);
+    let header = header::generate_header(file_path, &file_data, &nonce);
 
     log_debug!("Converting file");
     // change the file to be .box instead
@@ -76,7 +77,7 @@ pub fn encrypt(input_path: &Path, opts: &mut options::EncryptionOptions) -> Resu
     let file_path = path_buffer.as_path();
 
     log_debug!("Encrypting data");
-    let body = cipher::encrypt(&key, &nonce, &file_data).expect("Error encrypting file");
+    let body = cipher::encrypt(&key, &nonce, &file_data);
 
     log_debug!("Writing data");
     parser::write_file(file_path, header, body)?;
@@ -97,10 +98,12 @@ pub fn decrypt(input_path: &Path, opts: &mut options::DecryptionOptions) -> Resu
 
     log_debug!("Reading data");
     let key = keys::get_key();
-    let (header, body) = parser::parse_file(file_path, key)?;
+    let box_file = parser::parse_file(file_path)?;
+    let header = box_file.header;
+    let body = cipher::decrypt(&key, &header.nonce, &box_file.body);
 
     log_debug!("Validating checksum");
-    let new_checksum = parser::generate_checksum(&body);
+    let new_checksum = checksum::generate_checksum(&body);
     if new_checksum != header.checksum {
         return Err(Error::InvalidChecksum(file_name));
     }
@@ -131,7 +134,7 @@ pub fn decrypt(input_path: &Path, opts: &mut options::DecryptionOptions) -> Resu
     let file_path = path_buffer.as_path();
 
     log_debug!("Writing data");
-    file::write_bytes(&file_path, &body)?;
+    io::write_bytes(&file_path, &body).map_err(Error::from)?;
 
     Ok(())
 }

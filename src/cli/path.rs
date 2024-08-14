@@ -1,6 +1,6 @@
 use std::{fs, io, path::{Path, PathBuf}, ffi::OsString};
 
-use crate::encryption::parser;
+use crate::file::parser;
 use crate::{log_error, log_info};
 
 pub struct PathOptions {
@@ -51,7 +51,7 @@ fn search_for_original(dir_path: &Path, target_name: OsString) -> io::Result<Pat
 
         if !path.is_file() || path.extension().unwrap() != "box" { continue; }
 
-        let original_name = parser::get_header(path.as_path())?.original_filename;
+        let original_name = parser::parse_file(path.as_path())?.header.original_filename;
 
         if target_name == original_name {
             log_info!("Found an encrypted (.box) file with the same original name: {}", path.display());
