@@ -2,21 +2,33 @@ use std::{fs::File, io, io::Write};
 use std::io::BufReader;
 
 use serde::{Deserialize, Serialize};
-
-use crate::{log_debug, log_error, log_fatal, log_info};
+use crate::{log_debug, log_error, log_fatal, log_info, log_warn};
 use crate::encryption::cipher::{self, Key};
 use crate::storage::get_data_dir;
 
 #[derive(Serialize, Deserialize, Debug)]
+struct KeysFile {
+    key_data: Option<KeyData>
+}
+
+#[derive(Serialize, Deserialize, Debug)]
 struct KeyData {
-    key: Option<Key>
+    key: Key
 }
 
 pub fn get_key() -> Key {
     log_debug!("Getting key");
 
-    let key = match get_key_data() {
-        Ok(key_data) => key_data.key,
+    match get_keys_file() {
+        Ok(keys_file) => {
+            return if let Some(key_data) = keys_file.key_data {
+                key_data.key
+            } else {
+                log_error!("Key doesn't exist");
+                generate_new_key();
+                get_key()
+            }
+        },
         Err(err) => {
             if err.kind() == io::ErrorKind::NotFound {
                 log_error!("Key doesn't exist");
@@ -26,63 +38,41 @@ pub fn get_key() -> Key {
             log_fatal!("An error occurred while trying to get key: {}", err);
         }
     };
-
-    if key == None {
-        log_error!("Encryption key doesn't exist");
-        generate_new_key();
-        return get_key()
-    }
-    key.unwrap()
-}
-
-pub fn save_key(key: Key) {
-    log_debug!("Saving key");
-
-    let key_data = KeyData {
-        key: Some(key)
-    };
-
-    match write_key_data(key_data) {
-        Ok(_) => log_info!("Updated key"),
-        Err(err) => {
-            log_fatal!("An error occurred while trying to update key: {}", err);
-        }
-    }
 }
 
 pub fn delete_key() {
-    log_debug!("Deleting key");
+    log_debug!("Deleting key data");
 
-    let key_data = match get_key_data() {
-        Ok(key_data) => {
-            if key_data.key == None {
-                log_error!("Encryption key doesn't exist");
-                key_data
-            } else {
-                KeyData { key: None }
-            }
-        }
-        Err(_) => {
-            log_error!("Encryption key doesn't exist");
-            KeyData { key: None }
-        }
-    };
+    if let Err(_) = get_keys_file() {
+        log_warn!("Encryption key doesn't exist");
+    }
+    let empty_keys_file = KeysFile { key_data: None };
 
-    match write_key_data(key_data) {
-        Ok(_) => log_info!("Updated key"),
-        Err(err) => log_fatal!("An error occurred while trying to update key: {}", err)
+    match write_keys_file(empty_keys_file) {
+        Ok(_) => log_info!("Deleted key data"),
+        Err(err) => log_fatal!("An error occurred while trying to delete key data: {}", err)
     }
 }
 
 pub fn generate_new_key() {
     log_debug!("Generating new key");
     let key = cipher::generate_key();
-    save_key(key);
-    log_info!("Generated a new key");
+
+    let key_data = KeyData { key };
+    let keys_file = KeysFile {
+        key_data: Some(key_data)
+    };
+
+    match write_keys_file(keys_file) {
+        Ok(_) => log_info!("Saved generated key"),
+        Err(err) => {
+            log_fatal!("An error occurred while trying to save key: {}", err);
+        }
+    }
 }
 
-fn write_key_data(key_data: KeyData) -> io::Result<()> {
-    log_debug!("Writing saved key data: {:?}", key_data);
+fn write_keys_file(keys_file: KeysFile) -> io::Result<()> {
+    log_debug!("Writing data to keys file: {:?}", keys_file);
 
     let mut keys_path = get_data_dir();
     keys_path.push("keys.json");
@@ -93,15 +83,15 @@ fn write_key_data(key_data: KeyData) -> io::Result<()> {
         .truncate(true)
         .open(keys_path)?;
 
-    serde_json::to_writer(&file, &key_data)
-        .map_err(|_| io::Error::new(io::ErrorKind::InvalidData, "Unable to serialize key data"))?;
+    serde_json::to_writer(&file, &keys_file)
+        .map_err(|_| io::Error::new(io::ErrorKind::InvalidData, "Unable to serialize keys file"))?;
 
     file.flush()?;
     Ok(())
 }
 
-fn get_key_data() -> io::Result<KeyData> {
-    log_debug!("Getting saved key data");
+fn get_keys_file() -> io::Result<KeysFile> {
+    log_debug!("Getting keys file data");
 
     let mut keys_path = get_data_dir();
     keys_path.push("keys.json");
@@ -109,9 +99,9 @@ fn get_key_data() -> io::Result<KeyData> {
     let file = File::open(keys_path)?;
     let reader = BufReader::new(file);
 
-    let key_data = serde_json::from_reader(reader)
+    let keys_file: KeysFile = serde_json::from_reader(reader)
         .map_err(|_| io::Error::new(io::ErrorKind::InvalidData, "Unable to deserialize key data"))?;
 
-    log_debug!("Got key data: {:?}", key_data);
-    Ok(key_data)
+    log_debug!("Got keys file data: {:?}", keys_file);
+    Ok(keys_file)
 }
