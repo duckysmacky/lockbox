@@ -2,7 +2,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use crate::encryption::{checksum, cipher};
 use crate::file::{parser, io, header};
-use crate::storage::keys;
+use crate::storage::{auth, keys};
 
 pub use crate::error::{Error, Result};
 
@@ -39,19 +39,23 @@ pub mod options {
     }
 }
 
-pub fn encrypt(input_path: &Path, opts: &mut options::EncryptionOptions) -> Result<()> {
+pub fn encrypt(input_path: &Path, password: &str, opts: &mut options::EncryptionOptions) -> Result<()> {
+    if !auth::verify_password(password) {
+        return Err(Error::AuthenticationFailed("Invalid password entered".to_string()))
+    }
+
     if input_path.extension().unwrap() == "box" {
         return Err(Error::InvalidFile(format!("\"{}\" is already encrypted", input_path.display())))
     }
 
-    log_success!("Encrypting file \"{:?}\"", input_path.file_name().unwrap().to_os_string());
+    log_success!("Encrypting file {:?}", input_path.file_name().unwrap().to_os_string());
 
     let mut path_buffer = PathBuf::from(input_path);
     let file_path = path_buffer.as_path();
 
     // get needed data
     let file_data = io::read_bytes(file_path).map_err(Error::from)?;
-    let key = keys::get_key().key;
+    let key = keys::get_key_data(password).key;
     let nonce = cipher::generate_nonce();
     let header = header::generate_header(file_path, &file_data, &nonce);
 
@@ -85,7 +89,11 @@ pub fn encrypt(input_path: &Path, opts: &mut options::EncryptionOptions) -> Resu
     Ok(())
 }
 
-pub fn decrypt(input_path: &Path, opts: &mut options::DecryptionOptions) -> Result<()> {
+pub fn decrypt(input_path: &Path, password: &str, opts: &mut options::DecryptionOptions) -> Result<()> {
+    if !auth::verify_password(password) {
+        return Err(Error::AuthenticationFailed("Invalid password entered".to_string()))
+    }
+
     if input_path.extension().unwrap() != "box" {
         return Err(Error::InvalidFile(format!("\"{}\" cannot be decrypted", input_path.display())))
     }
@@ -97,7 +105,7 @@ pub fn decrypt(input_path: &Path, opts: &mut options::DecryptionOptions) -> Resu
     let file_path = path_buffer.as_path();
 
     log_debug!("Reading data");
-    let key = keys::get_key().key;
+    let key = keys::get_key_data(password).key;
     let box_file = parser::parse_file(file_path)?;
     let header = box_file.header;
     let body = cipher::decrypt(&key, &header.nonce, &box_file.body);
@@ -139,14 +147,22 @@ pub fn decrypt(input_path: &Path, opts: &mut options::DecryptionOptions) -> Resu
     Ok(())
 }
 
-pub fn new_key(_options: &options::NewKeyOptions) -> Result<()> {
-    log_success!("Generating a new encryption key");
-    keys::create_new_key();
+pub fn new_key(password: &str, _options: &options::NewKeyOptions) -> Result<()> {
+    if !auth::verify_password(password) {
+        return Err(Error::AuthenticationFailed("Invalid password entered".to_string()))
+    }
+
+    log_info!("Generating a new encryption key");
+    keys::generate_key(password);
     Ok(())
 }
 
-pub fn delete_key(_options: &options::DeleteKeyOptions) -> Result<()> {
-    log_success!("Deleting encryption key");
+pub fn delete_key(password: &str, _options: &options::DeleteKeyOptions) -> Result<()> {
+    if !auth::verify_password(password) {
+        return Err(Error::AuthenticationFailed("Invalid password entered".to_string()))
+    }
+
+    log_info!("Deleting encryption key");
     keys::delete_key();
     Ok(())
 }

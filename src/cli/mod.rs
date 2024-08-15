@@ -1,7 +1,7 @@
 pub mod commands;
 pub mod logger;
 pub mod path;
-pub mod util;
+pub mod prompts;
 
 use clap::{Arg, ArgAction, Command, command};
 

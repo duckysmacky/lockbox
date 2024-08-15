@@ -8,7 +8,8 @@ pub enum Error {
     KeyNotFound,
     IOError(io::Error),
     InvalidChecksum(OsString),
-    InvalidFile(String)
+    InvalidFile(String),
+    AuthenticationFailed(String)
 }
 
 impl fmt::Display for Error {
@@ -17,7 +18,8 @@ impl fmt::Display for Error {
             Error::KeyNotFound => write!(f, "Key not found"),
             Error::IOError(ref err) => write!(f, "{}", err),
             Error::InvalidChecksum(ref file_name) => write!(f, "Checksum verification failed for {:?}", file_name),
-            Error::InvalidFile(ref msg) => write!(f, "{}", msg)
+            Error::InvalidFile(ref msg) => write!(f, "{}", msg),
+            Error::AuthenticationFailed(ref msg) => write!(f, "Authentication failed: {}", msg)
         }
     }
 }

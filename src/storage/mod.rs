@@ -1,5 +1,5 @@
 pub mod keys;
-mod verification;
+pub mod auth;
 
 use std::{path::PathBuf, env, fs};
 
@@ -24,7 +24,7 @@ fn get_data_dir() -> PathBuf {
     };
 
     if !path.exists() {
-        fs::create_dir_all(&path).expect("Failed to create Data directory");
+        fs::create_dir_all(&path).expect("Failed to create lockbox data directory");
     }
 
     path
@@ -51,7 +51,7 @@ fn get_config_dir() -> PathBuf {
     };
 
     if !path.exists() {
-        fs::create_dir_all(&path).expect("Failed to create Config directory");
+        fs::create_dir_all(&path).expect("Failed to create lockbox config directory");
     }
 
     path

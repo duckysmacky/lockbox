@@ -4,11 +4,10 @@ use std::io::BufReader;
 use serde::{Deserialize, Serialize};
 use crate::{log_debug, log_error, log_fatal, log_info, log_success, log_warn};
 use crate::encryption::cipher::{self, Key};
-use crate::storage::get_data_dir;
-use crate::storage::verification;
+use crate::storage::{auth, get_data_dir};
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct KeysFile {
+pub struct KeyFile {
     pub key_data: Option<KeyData>
 }
 
@@ -18,26 +17,20 @@ pub struct KeyData {
     pub password_hash: String,
 }
 
-pub fn get_key() -> KeyData {
+pub fn get_key_data(password: &str) -> KeyData {
     log_debug!("Getting key data");
 
     match get_keys_file() {
-        Ok(keys_file) => {
-            return if let Some(key_data) = keys_file.key_data {
+        Ok(key_file) => {
+            return if let Some(key_data) = key_file.key_data {
                 key_data
             } else {
-                log_error!("Key doesn't exist");
-                log_success!("Creating a new key");
-                create_new_key();
-                get_key()
+                create_new_key(password)
             }
-        },
+        }
         Err(err) => {
             if err.kind() == io::ErrorKind::NotFound {
-                log_error!("Key doesn't exist");
-                log_success!("Creating a new key");
-                create_new_key();
-                get_key()
+                create_new_key(password)
             } else {
                 log_fatal!("An error occurred while trying to get key file data: {}", err);
             }
@@ -51,7 +44,7 @@ pub fn delete_key() {
     if let Err(_) = get_keys_file() {
         log_warn!("Encryption key doesn't exist");
     }
-    let empty_keys_file = KeysFile { key_data: None };
+    let empty_keys_file = KeyFile { key_data: None };
 
     match write_keys_file(empty_keys_file) {
         Ok(_) => log_info!("Deleted key data"),
@@ -59,28 +52,34 @@ pub fn delete_key() {
     }
 }
 
-pub fn create_new_key() {
-    log_debug!("Generating new key");
+pub fn generate_key(password: &str) {
+    log_debug!("Generating a new encryption key");
     let key = cipher::generate_key();
-    let password = verification::prompt_password();
+    let (hash, _salt) = auth::hash_password(password);
 
-    let key_data = KeyData {
-        key,
-        password_hash: password,
-    };
-    let keys_file = KeysFile {
-        key_data: Some(key_data)
+    let key_file = KeyFile {
+        key_data: Some(KeyData {
+            key,
+            password_hash: hash,
+        })
     };
 
-    match write_keys_file(keys_file) {
-        Ok(_) => log_info!("Saved a new key"),
+    match write_keys_file(key_file) {
+        Ok(_) => log_info!("Saved the new key"),
         Err(err) => {
             log_fatal!("An error occurred while trying to save the new key: {}", err);
         }
     }
 }
 
-pub fn write_keys_file(keys_file: KeysFile) -> io::Result<()> {
+pub fn create_new_key(password: &str) -> KeyData {
+    log_error!("Encryption key doesn't exist");
+    log_success!("Creating a new encryption key with given password");
+    generate_key(password);
+    get_key_data(password)
+}
+
+fn write_keys_file(keys_file: KeyFile) -> io::Result<()> {
     log_debug!("Writing data to keys file: {:?}", keys_file);
 
     let mut keys_path = get_data_dir();
@@ -99,7 +98,7 @@ pub fn write_keys_file(keys_file: KeysFile) -> io::Result<()> {
     Ok(())
 }
 
-pub fn get_keys_file() -> io::Result<KeysFile> {
+fn get_keys_file() -> io::Result<KeyFile> {
     log_debug!("Getting keys file data");
 
     let mut keys_path = get_data_dir();
@@ -108,7 +107,7 @@ pub fn get_keys_file() -> io::Result<KeysFile> {
     let file = File::open(keys_path)?;
     let reader = BufReader::new(file);
 
-    let keys_file: KeysFile = serde_json::from_reader(reader)
+    let keys_file: KeyFile = serde_json::from_reader(reader)
         .map_err(|_| io::Error::new(io::ErrorKind::InvalidData, "Unable to deserialize key data"))?;
 
     log_debug!("Got keys file data: {:?}", keys_file);
