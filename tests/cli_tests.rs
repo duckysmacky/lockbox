@@ -1,23 +1,26 @@
-mod common;
-
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
-
 use common::*;
 
-fn encrypt(path: &PathBuf) -> Output {
+mod common;
+
+fn encrypt_command(path: &PathBuf) -> Output {
     Command::new("lockbox")
-        .args(&["-v", "box", path.to_str().unwrap()])
+        .args(&["-v", "box", "-p", PASSWORD, path.to_str().unwrap()])
         .output()
-        .expect("failed to execute process")
+        .expect("Failed to execute \"box\" command")
 }
 
-fn decrypt(path: &PathBuf) -> Output {
+fn decrypt_command(path: &PathBuf) -> Output {
     Command::new("lockbox")
-        .args(&["-v", "unbox", path.to_str().unwrap()])
+        .args(&["-v", "unbox", "-p", PASSWORD, path.to_str().unwrap()])
         .output()
-        .expect("failed to execute process")
+        .expect("Failed to execute \"unbox\" command")
+}
+
+fn format_output(text: &str, output: Output) -> String {
+    format!("{}\nSTDOUT: {:?}\nSTDERR: {:?}\nSTATUS CODE: {}\n", text, output.stdout, output.stderr, output.status)
 }
 
 #[test]
@@ -28,15 +31,15 @@ fn test_word_encryption() {
     let test_file = Path::new(TEST_DIR).join(file_name);
     let original_file = Path::new(ORIGINAL_DIR).join(file_name);
 
-    let output = encrypt(&test_file);
-    assert!(output.status.success(), "Encryption failed: {:?}", output);
+    let output = encrypt_command(&test_file);
+    assert!(output.status.success(), "{}", format_output("Encryption failed", output));
 
-    let output = decrypt(&test_file);
-    assert!(output.status.success(), "Decryption failed: {:?}", output);
+    let output = decrypt_command(&test_file);
+    assert!(output.status.success(), "{}", format_output("Decryption failed", output));
 
-    let original_content = fs::read_to_string(original_file).expect("failed to read original file");
-    let decrypted_content = fs::read_to_string(test_file).expect("failed to read decrypted file");
-    assert_eq!(original_content, decrypted_content, "Decrypted content doesn't match original content!");
+    let original_content = fs::read_to_string(original_file).expect("Failed to read original file");
+    let decrypted_content = fs::read_to_string(test_file).expect("Failed to read decrypted file");
+    assert_eq!(original_content, decrypted_content, "Decrypted content doesn't match original content");
 
     cleanup();
 }
@@ -49,14 +52,14 @@ fn test_words_encryption() {
     let test_file = Path::new(TEST_DIR).join(file_name);
     let original_file = Path::new(ORIGINAL_DIR).join(file_name);
 
-    let output = encrypt(&test_file);
-    assert!(output.status.success(), "Encryption failed: {:?}", output);
+    let output = encrypt_command(&test_file);
+    assert!(output.status.success(), "{}", format_output("Encryption failed", output));
 
-    let output = decrypt(&test_file);
-    assert!(output.status.success(), "Decryption failed: {:?}", output);
+    let output = decrypt_command(&test_file);
+    assert!(output.status.success(), "{}", format_output("Decryption failed", output));
 
-    let original_content = fs::read_to_string(original_file).expect("failed to read original file");
-    let decrypted_content = fs::read_to_string(test_file).expect("failed to read decrypted file");
+    let original_content = fs::read_to_string(original_file).expect("Failed to read original file");
+    let decrypted_content = fs::read_to_string(test_file).expect("Failed to read decrypted file");
     assert_eq!(original_content, decrypted_content, "Decrypted content doesn't match original content!");
 
     cleanup();

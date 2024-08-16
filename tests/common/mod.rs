@@ -1,6 +1,7 @@
 use std::fs;
 use std::path::Path;
 
+pub const PASSWORD: &str = "test123"; // just a password for testing
 pub const ORIGINAL_DIR: &str = "test-files/original";
 pub const TEST_DIR: &str = "test-files/test";
 

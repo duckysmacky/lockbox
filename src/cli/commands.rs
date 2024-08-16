@@ -23,7 +23,10 @@ pub fn r#box(args: &ArgMatches) -> (u32, u32) {
         output_paths: get_path_deque(args, "output-path")
     };
 
-    let password = prompts::prompt_password("Please enter your password to continue: ");
+    let password = match args.get_one::<String>("password") {
+        None => prompts::prompt_password("Please enter your password to continue: "),
+        Some(password) => password.to_string()
+    };
 
     // encrypt each file and handle errors accordingly
     for path in file_paths {
@@ -63,7 +66,10 @@ pub fn unbox(args: &ArgMatches) -> (u32, u32) {
         output_paths: get_path_deque(args, "output-path")
     };
 
-    let password = prompts::prompt_password("Please enter your password to continue: ");
+    let password = match args.get_one::<String>("password") {
+        None => prompts::prompt_password("Please enter your password to continue: "),
+        Some(password) => password.to_string()
+    };
 
     // decrypt each file and handle errors accordingly
     for path in file_paths {
@@ -87,10 +93,13 @@ pub fn unbox(args: &ArgMatches) -> (u32, u32) {
 }
 
 pub fn key(args: &ArgMatches) {
-    let password = prompts::prompt_password("Please enter your password to continue: ");
-
     /* NEW */
-    if let Some(_args) = args.subcommand_matches("new") {
+    if let Some(args) = args.subcommand_matches("new") {
+        let password = match args.get_one::<String>("password") {
+            None => prompts::prompt_password("Please enter your password to continue: "),
+            Some(password) => password.to_string()
+        };
+
         let options = options::NewKeyOptions {
             key_options: options::KeyOptions {}
         };
@@ -104,7 +113,12 @@ pub fn key(args: &ArgMatches) {
         log_success!("Successfully generated a new encryption key");
     }
     /* DELETE */
-    if let Some(_args) = args.subcommand_matches("delete") {
+    if let Some(args) = args.subcommand_matches("delete") {
+        let password = match args.get_one::<String>("password") {
+            None => prompts::prompt_password("Please enter your password to continue: "),
+            Some(password) => password.to_string()
+        };
+
         let options = options::DeleteKeyOptions {
             key_options: options::KeyOptions {}
         };
