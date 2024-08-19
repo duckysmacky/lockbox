@@ -3,10 +3,10 @@ use std::ffi::OsString;
 
 pub type Result<T> = std::result::Result<T, Error>;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Error {
     KeyNotFound,
-    IOError(io::Error),
+    IOError(String),
     InvalidChecksum(OsString),
     InvalidFile(String),
     AuthenticationFailed(String)
@@ -26,6 +26,6 @@ impl fmt::Display for Error {
 
 impl From<io::Error> for Error {
     fn from(err: io::Error) -> Error {
-        Error::IOError(err)
+        Error::IOError(err.to_string())
     }
 }
