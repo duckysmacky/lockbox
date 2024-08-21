@@ -19,6 +19,13 @@ fn decrypt_command(path: &PathBuf) -> Output {
         .expect("Failed to execute the \"unbox\" command")
 }
 
+fn create_profile_command() -> Output {
+    Command::new("lockbox")
+        .args(&["-v", "-p", PASSWORD, "profile", "create", "test"])
+        .output()
+        .expect("Failed to execute the \"profile create\" command")
+}
+
 fn format_output(text: &str, output: Output) -> String {
     format!("{}\nSTDOUT: {:?}\nSTDERR: {:?}\nSTATUS CODE: {}\n", text, output.stdout, output.stderr, output.status)
 }
@@ -30,6 +37,9 @@ fn test_word_encryption() {
 
     let test_file = Path::new(TEST_DIR).join(file_name);
     let original_file = Path::new(ORIGINAL_DIR).join(file_name);
+
+    let output = create_profile_command();
+    assert!(output.status.success(), "{}", format_output("Profile creation failed", output));
 
     let output = encrypt_command(&test_file);
     assert!(output.status.success(), "{}", format_output("Encryption failed", output));
@@ -51,6 +61,9 @@ fn test_words_encryption() {
 
     let test_file = Path::new(TEST_DIR).join(file_name);
     let original_file = Path::new(ORIGINAL_DIR).join(file_name);
+
+    let output = create_profile_command();
+    assert!(output.status.success(), "{}", format_output("Profile creation failed", output));
 
     let output = encrypt_command(&test_file);
     assert!(output.status.success(), "{}", format_output("Encryption failed", output));

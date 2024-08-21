@@ -1,7 +1,7 @@
 use std::{env, fs};
 use std::path::{Path, PathBuf};
 
-pub const PASSWORD: &str = "test123"; // just a password for testing
+pub const PASSWORD: &str = "test_password"; // just a password for testing
 #[allow(dead_code)]
 pub const ORIGINAL_DIR: &str = "test-files/original";
 #[allow(dead_code)]
