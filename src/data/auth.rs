@@ -1,7 +1,7 @@
 use argon2::{self, Config};
 use rand::random;
 use crate::log_fatal;
-use super::keys;
+use super::Profile;
 
 pub fn hash_password(password: &str) -> (String, [u8; 16]) {
     let salt: [u8; 16] = random();
@@ -12,8 +12,7 @@ pub fn hash_password(password: &str) -> (String, [u8; 16]) {
     (hashed_password, salt)
 }
 
-pub fn verify_password(input_password: &str) -> bool {
-    let key_data = keys::get_key_data(input_password);
-
-    argon2::verify_encoded(&key_data.password_hash, input_password.as_bytes()).unwrap_or(false)
+pub fn verify_password(input_password: &str, profile: Profile) -> bool {
+    argon2::verify_encoded(&profile.password_hash, input_password.as_bytes())
+        .unwrap_or(false)
 }

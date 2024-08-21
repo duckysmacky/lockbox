@@ -1,11 +1,11 @@
 use std::{collections::VecDeque, path::PathBuf};
 use clap::ArgMatches;
 use crate::cli::path;
-use crate::{Error, log_fatal, log_warn, options};
-use crate::{decrypt, delete_key, encrypt, log_error, log_success, new_key};
+use crate::{create_profile, delete_profile, Error, get_key, log_fatal, log_warn, options};
+use crate::{decrypt, encrypt, log_error, log_success, new_key};
 use crate::cli::prompts;
 
-pub fn r#box(args: &ArgMatches) -> (u32, u32) {
+pub fn r#box(g_args: &ArgMatches, args: &ArgMatches) -> (u32, u32) {
     let mut total_files: u32 = 0;
     let mut error_files: u32 = 0;
     let mut file_paths: Vec<PathBuf> = Vec::new();
@@ -23,8 +23,8 @@ pub fn r#box(args: &ArgMatches) -> (u32, u32) {
         output_paths: get_path_deque(args, "output-path")
     };
 
-    let password = match args.get_one::<String>("password") {
-        None => prompts::prompt_password("Please enter your password to continue: "),
+    let password = match g_args.get_one::<String>("password") {
+        None => prompts::prompt_password("Please enter the password for the current profile:"),
         Some(password) => password.to_string()
     };
 
@@ -49,7 +49,7 @@ pub fn r#box(args: &ArgMatches) -> (u32, u32) {
     (total_files, error_files)
 }
 
-pub fn unbox(args: &ArgMatches) -> (u32, u32) {
+pub fn unbox(g_args: &ArgMatches, args: &ArgMatches) -> (u32, u32) {
     let mut total_files: u32 = 0;
     let mut error_files: u32 = 0;
     let mut file_paths: Vec<PathBuf> = Vec::new();
@@ -66,8 +66,8 @@ pub fn unbox(args: &ArgMatches) -> (u32, u32) {
         output_paths: get_path_deque(args, "output-path")
     };
 
-    let password = match args.get_one::<String>("password") {
-        None => prompts::prompt_password("Please enter your password to continue: "),
+    let password = match g_args.get_one::<String>("password") {
+        None => prompts::prompt_password("Please enter the password for the current profile:"),
         Some(password) => password.to_string()
     };
 
@@ -86,51 +86,77 @@ pub fn unbox(args: &ArgMatches) -> (u32, u32) {
             error_files += 1;
         }
 
-        log_success!("Successfully encrypted {:?}", path.file_name().unwrap().to_os_string());
+        log_success!("Successfully decrypted {:?}", path.file_name().unwrap().to_os_string());
     }
 
     (total_files, error_files)
 }
 
-pub fn key(args: &ArgMatches) {
-    /* NEW */
-    if let Some(args) = args.subcommand_matches("new") {
-        let password = match args.get_one::<String>("password") {
-            None => prompts::prompt_password("Please enter your password to continue: "),
-            Some(password) => password.to_string()
-        };
+pub fn profile_create(g_args: &ArgMatches, args: &ArgMatches) {
+    let password = match g_args.get_one::<String>("password") {
+        None => prompts::prompt_password("Please enter a password for the new profile:"),
+        Some(password) => password.to_string()
+    };
 
-        let options = options::NewKeyOptions {
-            key_options: options::KeyOptions {}
-        };
+    let name = args.get_one::<String>("name").expect("Profile name is required");
 
-        if let Err(err) = new_key(&password, &options) {
-            if !handle_error(&err) {
-                log_fatal!("A fatal error has occurred while trying to generate a new key: {}", err)
-            }
+    if let Err(err) = create_profile(name, &password) {
+        if !handle_error(&err) {
+            log_fatal!("A fatal error has occurred: {}", err)
         }
-
-        log_success!("Successfully generated a new encryption key");
     }
-    /* DELETE */
-    if let Some(args) = args.subcommand_matches("delete") {
-        let password = match args.get_one::<String>("password") {
-            None => prompts::prompt_password("Please enter your password to continue: "),
-            Some(password) => password.to_string()
-        };
 
-        let options = options::DeleteKeyOptions {
-            key_options: options::KeyOptions {}
-        };
+    log_success!("Successfully created new profile \"{}\"", name);
+}
 
-        if let Err(err) = delete_key(&password, &options) {
-            if !handle_error(&err) {
-                log_fatal!("A fatal error has occurred while trying to generate a new key: {}", err)
-            }
+pub fn profile_delete(g_args: &ArgMatches, args: &ArgMatches) {
+    let password = match g_args.get_one::<String>("password") {
+        None => prompts::prompt_password("Please enter the password for the target profile"),
+        Some(password) => password.to_string()
+    };
+
+    let name = args.get_one::<String>("name").expect("Profile name is required");
+
+    if let Err(err) = delete_profile(name, &password) {
+        if !handle_error(&err) {
+            log_fatal!("A fatal error has occurred: {}", err)
         }
-
-        log_success!("Successfully deleted the saved encryption key");
     }
+
+    log_success!("Successfully deleted profile \"{}\"", name);
+}
+
+pub fn key_new(g_args: &ArgMatches, _args: &ArgMatches) {
+    let password = match g_args.get_one::<String>("password") {
+        None => prompts::prompt_password("Please enter the password for the current profile:"),
+        Some(password) => password.to_string()
+    };
+
+    if let Err(err) = new_key(&password) {
+        if !handle_error(&err) {
+            log_fatal!("A fatal error has occurred: {}", err)
+        }
+    }
+
+    log_success!("Successfully generated new encryption key for the current profile");
+}
+
+pub fn key_get(g_args: &ArgMatches, _args: &ArgMatches) {
+    let password = match g_args.get_one::<String>("password") {
+        None => prompts::prompt_password("Please enter the password for the current profile:"),
+        Some(password) => password.to_string()
+    };
+
+    let key = get_key(&password);
+    if let Err(err) = &key {
+        if !handle_error(err) {
+            log_fatal!("A fatal error has occurred: {}", err)
+        }
+    }
+
+    // TODO: add current profile name
+    log_success!("Encryption key for the current profile:");
+    log_success!("{}", key.unwrap());
 }
 
 fn get_path_vec(args: &ArgMatches, arg_id: &str) -> Option<Vec<PathBuf>> {
@@ -160,7 +186,12 @@ fn get_path_deque(args: &ArgMatches, arg_id: &str) -> Option<VecDeque<PathBuf>> 
 
 fn handle_error(err: &Error) -> bool {
     match err {
-        Error::AuthenticationFailed(msg) => {
+        Error::ProfileError(msg) => {
+            log_error!("{}", msg);
+            log_error!("New profile can be created with \"lockbox profile new\"");
+            std::process::exit(1);
+        }
+        Error::AuthError(msg) => {
             log_error!("{}", msg);
             log_error!("Please try again");
             std::process::exit(1);

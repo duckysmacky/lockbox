@@ -3,23 +3,25 @@ use std::ffi::OsString;
 
 pub type Result<T> = std::result::Result<T, Error>;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum Error {
-    KeyNotFound,
+    ProfileError(String),
+    KeyError(String),
     IOError(String),
     InvalidChecksum(OsString),
     InvalidFile(String),
-    AuthenticationFailed(String)
+    AuthError(String),
 }
 
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Error::KeyNotFound => write!(f, "Key not found"),
+            Error::ProfileError(ref err) => write!(f, "{}", err),
+            Error::KeyError(ref err) => write!(f, "{}", err),
             Error::IOError(ref err) => write!(f, "{}", err),
             Error::InvalidChecksum(ref file_name) => write!(f, "Checksum verification failed for {:?}", file_name),
             Error::InvalidFile(ref msg) => write!(f, "{}", msg),
-            Error::AuthenticationFailed(ref msg) => write!(f, "Authentication failed: {}", msg)
+            Error::AuthError(ref msg) => write!(f, "Authentication failed: {}", msg)
         }
     }
 }

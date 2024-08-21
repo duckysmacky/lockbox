@@ -2,13 +2,13 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use crate::encryption::{checksum, cipher};
 use crate::file::{parser, io, header};
-use crate::storage::{auth, keys};
+use crate::data::{auth, keys, profiles};
 
 pub use crate::error::{Error, Result};
 
 pub mod cli;
 mod encryption;
-mod storage;
+mod data;
 mod error;
 mod file;
 
@@ -23,25 +23,13 @@ pub mod options {
     pub struct DecryptionOptions {
         pub output_paths: Option<VecDeque<PathBuf>>
     }
-
-    pub struct KeyOptions {
-        // TODO
-    }
-
-    pub struct NewKeyOptions {
-        // TODO
-        pub key_options: KeyOptions
-    }
-
-    pub struct DeleteKeyOptions {
-        // TODO
-        pub key_options: KeyOptions
-    }
 }
 
 pub fn encrypt(input_path: &Path, password: &str, opts: &mut options::EncryptionOptions) -> Result<()> {
-    if !auth::verify_password(password) {
-        return Err(Error::AuthenticationFailed("Invalid password entered".to_string()))
+    let profile = profiles::get_current_profile()?;
+
+    if !auth::verify_password(password, profile) {
+        return Err(Error::AuthError("Invalid password entered".to_string()))
     }
 
     if input_path.extension().unwrap() == "box" {
@@ -55,11 +43,10 @@ pub fn encrypt(input_path: &Path, password: &str, opts: &mut options::Encryption
 
     // get needed data
     let file_data = io::read_bytes(file_path).map_err(Error::from)?;
-    let key = keys::get_key_data(password).key;
+    let key = keys::get_key()?;
     let nonce = cipher::generate_nonce();
     let header = header::generate_header(file_path, &file_data, &nonce);
 
-    log_debug!("Converting file");
     // change the file to be .box instead
     fs::remove_file(file_path)?;
 
@@ -80,18 +67,17 @@ pub fn encrypt(input_path: &Path, password: &str, opts: &mut options::Encryption
     path_buffer.set_extension("box");
     let file_path = path_buffer.as_path();
 
-    log_debug!("Encrypting data");
     let body = cipher::encrypt(&key, &nonce, &file_data);
-
-    log_debug!("Writing data");
     parser::write_file(file_path, header, body)?;
 
     Ok(())
 }
 
 pub fn decrypt(input_path: &Path, password: &str, opts: &mut options::DecryptionOptions) -> Result<()> {
-    if !auth::verify_password(password) {
-        return Err(Error::AuthenticationFailed("Invalid password entered".to_string()))
+    let profile = profiles::get_current_profile()?;
+
+    if !auth::verify_password(password, profile) {
+        return Err(Error::AuthError("Invalid password entered".to_string()))
     }
 
     if input_path.extension().unwrap() != "box" {
@@ -104,8 +90,7 @@ pub fn decrypt(input_path: &Path, password: &str, opts: &mut options::Decryption
     let mut path_buffer = PathBuf::from(input_path);
     let file_path = path_buffer.as_path();
 
-    log_debug!("Reading data");
-    let key = keys::get_key_data(password).key;
+    let key = keys::get_key()?;
     let box_file = parser::parse_file(file_path)?;
     let header = box_file.header;
     let body = cipher::decrypt(&key, &header.nonce, &box_file.body);
@@ -116,9 +101,7 @@ pub fn decrypt(input_path: &Path, password: &str, opts: &mut options::Decryption
         return Err(Error::InvalidChecksum(file_name));
     }
 
-    log_debug!("Changing file");
     fs::remove_file(file_path)?;
-
     if let Some(ref mut output_paths) = opts.output_paths {
         log_debug!("Output paths given: {:?}", output_paths);
         if let Some(output_path) = output_paths.pop_front() {
@@ -140,29 +123,38 @@ pub fn decrypt(input_path: &Path, password: &str, opts: &mut options::Decryption
     }
 
     let file_path = path_buffer.as_path();
-
-    log_debug!("Writing data");
     io::write_bytes(&file_path, &body).map_err(Error::from)?;
 
     Ok(())
 }
 
-pub fn new_key(password: &str, _options: &options::NewKeyOptions) -> Result<()> {
-    if !auth::verify_password(password) {
-        return Err(Error::AuthenticationFailed("Invalid password entered".to_string()))
-    }
-
-    log_info!("Generating a new encryption key");
-    keys::generate_key(password);
-    Ok(())
+pub fn create_profile(profile_name: &str, password: &str) -> Result<()> {
+    log_info!("Creating a new profile with name \"{}\"", profile_name);
+    profiles::create_new_profile(profile_name, password)
 }
 
-pub fn delete_key(password: &str, _options: &options::DeleteKeyOptions) -> Result<()> {
-    if !auth::verify_password(password) {
-        return Err(Error::AuthenticationFailed("Invalid password entered".to_string()))
+pub fn delete_profile(profile_name: &str, password: &str) -> Result<()> {
+    let profile = profiles::get_profile(profile_name)?;
+
+    if !auth::verify_password(password, profile) {
+        return Err(Error::AuthError("Invalid password entered".to_string()))
     }
 
-    log_info!("Deleting encryption key");
-    keys::delete_key();
-    Ok(())
+    log_info!("Deleting profile \"{}\"", profile_name);
+    profiles::delete_profile(profile_name)
+}
+
+pub fn new_key(password: &str) -> Result<()> {
+    let profile = profiles::get_current_profile()?;
+
+    if !auth::verify_password(password, profile) {
+        return Err(Error::AuthError("Invalid password entered".to_string()))
+    }
+
+    log_info!("Generating a new encryption key for current profile");
+    keys::generate_new_key()
+}
+
+pub fn get_key(_password: &str) -> Result<String> {
+    todo!()
 }

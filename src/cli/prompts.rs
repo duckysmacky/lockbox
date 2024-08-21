@@ -2,8 +2,8 @@ use std::io;
 use crate::log_fatal;
 
 // TODO: hide user input
-pub fn prompt_password(prompt_text: &str) -> String {
-    println!("{}", prompt_text);
+pub fn prompt_password(msg: &str) -> String {
+    println!("{}", msg);
     get_input().unwrap_or_else(|err|log_fatal!("Error prompting password: {}", err))
 }
 

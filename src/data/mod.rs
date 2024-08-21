@@ -1,7 +1,23 @@
 pub mod keys;
 pub mod auth;
+pub mod profiles;
 
 use std::{path::PathBuf, env, fs};
+use serde::{Deserialize, Serialize};
+use crate::encryption::cipher::Key;
+
+#[derive(Serialize, Deserialize, Debug)]
+struct ProfilesData {
+    pub current_profile: Option<String>,
+    pub profiles: Vec<Profile>
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Profile {
+    pub name: String,
+    pub key: Key,
+    pub password_hash: String,
+}
 
 fn get_data_dir() -> PathBuf {
     let path = if cfg!(target_os = "windows") {

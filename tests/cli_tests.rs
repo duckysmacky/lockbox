@@ -7,16 +7,16 @@ mod common;
 
 fn encrypt_command(path: &PathBuf) -> Output {
     Command::new("lockbox")
-        .args(&["-v", "box", "-p", PASSWORD, path.to_str().unwrap()])
+        .args(&["-v", "-p", PASSWORD, "box", path.to_str().unwrap()])
         .output()
-        .expect("Failed to execute \"box\" command")
+        .expect("Failed to execute the \"box\" command")
 }
 
 fn decrypt_command(path: &PathBuf) -> Output {
     Command::new("lockbox")
-        .args(&["-v", "unbox", "-p", PASSWORD, path.to_str().unwrap()])
+        .args(&["-v", "-p", PASSWORD, "unbox", path.to_str().unwrap()])
         .output()
-        .expect("Failed to execute \"unbox\" command")
+        .expect("Failed to execute the \"unbox\" command")
 }
 
 fn format_output(text: &str, output: Output) -> String {
