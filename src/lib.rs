@@ -33,8 +33,10 @@ pub fn encrypt(input_path: &Path, password: &str, opts: &mut options::Encryption
         return Err(Error::AuthError("Invalid password entered".to_string()))
     }
 
-    if input_path.extension().unwrap() == "box" {
-        return Err(Error::InvalidFile(format!("\"{}\" is already encrypted", input_path.display())))
+    if let Some(extension) = input_path.extension() {
+        if extension == "box" {
+            return Err(Error::InvalidFile(format!("\"{}\" is already encrypted", input_path.display())))
+        }
     }
 
     let file_name = input_path.file_name().unwrap_or(OsStr::new("unknown")).to_os_string();
@@ -82,8 +84,10 @@ pub fn decrypt(input_path: &Path, password: &str, opts: &mut options::Decryption
         return Err(Error::AuthError("Invalid password entered".to_string()))
     }
 
-    if input_path.extension().unwrap() != "box" {
-        return Err(Error::InvalidFile(format!("\"{}\" cannot be decrypted", input_path.display())))
+    if let Some(extension) = input_path.extension() {
+        if extension != "box" {
+            return Err(Error::InvalidFile(format!("\"{}\" cannot be decrypted", input_path.display())))
+        }
     }
 
     let file_name = input_path.file_name().unwrap_or(OsStr::new("unknown")).to_os_string();
