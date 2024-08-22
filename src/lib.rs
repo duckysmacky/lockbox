@@ -39,7 +39,7 @@ pub fn encrypt(input_path: &Path, password: &str, opts: &mut options::Encryption
         }
     }
 
-    let file_name = input_path.file_name().unwrap_or(OsStr::new("unknown")).to_os_string();
+    let file_name = input_path.file_name().unwrap_or(OsStr::new("unknown file name")).to_os_string();
     log_success!("Encrypting file {:?}", file_name);
 
     let mut path_buffer = PathBuf::from(input_path);
@@ -90,7 +90,7 @@ pub fn decrypt(input_path: &Path, password: &str, opts: &mut options::Decryption
         }
     }
 
-    let file_name = input_path.file_name().unwrap_or(OsStr::new("unknown")).to_os_string();
+    let file_name = input_path.file_name().unwrap_or(OsStr::new("unknown file name")).to_os_string();
     log_success!("Decrypting file {:?}", file_name);
 
     let mut path_buffer = PathBuf::from(input_path);

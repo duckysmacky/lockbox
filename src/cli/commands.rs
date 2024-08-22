@@ -1,7 +1,8 @@
 use std::{collections::VecDeque, path::PathBuf};
+use std::ffi::OsStr;
 use clap::ArgMatches;
 use crate::cli::path;
-use crate::{create_profile, delete_profile, Error, get_key, log_fatal, log_warn, options};
+use crate::{create_profile, delete_profile, Error, get_key, log_warn, options};
 use crate::{decrypt, encrypt, log_error, log_success, new_key};
 use crate::cli::prompts;
 
@@ -33,10 +34,32 @@ pub fn r#box(g_args: &ArgMatches, args: &ArgMatches) -> (u32, u32) {
         total_files += 1;
 
         if let Err(err) = encrypt(path.as_path(), &password, &mut options) {
-            let file_name = path.file_name().unwrap().to_os_string();
+            let file_name = path.file_name().unwrap_or(OsStr::new("unknown file name")).to_os_string();
 
-            if !handle_error(&err) {
-                log_fatal!("A fatal error has occurred while trying to encrypt {:?}: {}", file_name, err)
+            match err {
+                Error::ProfileError(_) => {
+                    log_error!("{}", err);
+                    log_error!("New profile can be created with \"lockbox profile new\"");
+                    std::process::exit(1);
+                },
+                Error::KeyError(_) => {
+                    log_error!("{}", err);
+                    std::process::exit(1);
+                },
+                Error::IOError(_) => {
+                    log_error!("Unable to encrypt {:?}: {}", file_name, err);
+                },
+                Error::InvalidChecksum(_) => {
+                    log_error!("{}", err);
+                },
+                Error::InvalidFile(_) => {
+                    log_error!("Invalid file data for {:?}: {}", file_name, err);
+                },
+                Error::AuthError(_) => {
+                    log_error!("{}", err);
+                    log_error!("Please try again");
+                    std::process::exit(1);
+                }
             }
 
             log_warn!("Skipping file {:?}", file_name);
@@ -78,8 +101,30 @@ pub fn unbox(g_args: &ArgMatches, args: &ArgMatches) -> (u32, u32) {
         if let Err(err) = decrypt(path.as_path(), &password, &mut options) {
             let file_name = path.file_name().unwrap().to_os_string();
 
-            if !handle_error(&err) {
-                log_fatal!("A fatal error has occurred while trying to encrypt {:?}: {}", file_name, err)
+            match err {
+                Error::ProfileError(_) => {
+                    log_error!("{}", err);
+                    log_error!("New profile can be created with \"lockbox profile new\"");
+                    std::process::exit(1);
+                },
+                Error::KeyError(_) => {
+                    log_error!("{}", err);
+                    std::process::exit(1);
+                },
+                Error::IOError(_) => {
+                    log_error!("Unable to decrypt {:?}: {}", file_name, err);
+                },
+                Error::InvalidChecksum(_) => {
+                    log_error!("{}", err);
+                },
+                Error::InvalidFile(_) => {
+                    log_error!("Invalid file data for {:?}: {}", file_name, err);
+                },
+                Error::AuthError(_) => {
+                    log_error!("{}", err);
+                    log_error!("Please try again");
+                    std::process::exit(1);
+                }
             }
 
             log_warn!("Skipping file {:?}", file_name);
@@ -101,9 +146,8 @@ pub fn profile_create(g_args: &ArgMatches, args: &ArgMatches) {
     let name = args.get_one::<String>("name").expect("Profile name is required");
 
     if let Err(err) = create_profile(name, &password) {
-        if !handle_error(&err) {
-            log_fatal!("A fatal error has occurred: {}", err)
-        }
+        log_error!("A fatal error has occurred: {}", err);
+        std::process::exit(1);
     }
 
     log_success!("Successfully created new profile \"{}\"", name);
@@ -118,8 +162,16 @@ pub fn profile_delete(g_args: &ArgMatches, args: &ArgMatches) {
     let name = args.get_one::<String>("name").expect("Profile name is required");
 
     if let Err(err) = delete_profile(name, &password) {
-        if !handle_error(&err) {
-            log_fatal!("A fatal error has occurred: {}", err)
+        match err {
+            Error::AuthError(_) => {
+                log_error!("{}", err);
+                log_error!("Please try again");
+                std::process::exit(1);
+            },
+            _ => {
+                log_error!("A fatal error has occurred: {}", err);
+                std::process::exit(1);
+            }
         }
     }
 
@@ -133,8 +185,25 @@ pub fn key_new(g_args: &ArgMatches, _args: &ArgMatches) {
     };
 
     if let Err(err) = new_key(&password) {
-        if !handle_error(&err) {
-            log_fatal!("A fatal error has occurred: {}", err)
+        match err {
+            Error::AuthError(_) => {
+                log_error!("{}", err);
+                log_error!("Please try again");
+                std::process::exit(1);
+            },
+            Error::ProfileError(_) => {
+                log_error!("{}", err);
+                log_error!("New profile can be created with \"lockbox profile new\"");
+                std::process::exit(1);
+            },
+            Error::KeyError(_) => {
+                log_error!("{}", err);
+                std::process::exit(1);
+            },
+            _ => {
+                log_error!("A fatal error has occurred: {}", err);
+                std::process::exit(1);
+            }
         }
     }
 
@@ -149,8 +218,25 @@ pub fn key_get(g_args: &ArgMatches, _args: &ArgMatches) {
 
     let key = get_key(&password);
     if let Err(err) = &key {
-        if !handle_error(err) {
-            log_fatal!("A fatal error has occurred: {}", err)
+        match err {
+            Error::AuthError(_) => {
+                log_error!("{}", err);
+                log_error!("Please try again");
+                std::process::exit(1);
+            },
+            Error::ProfileError(_) => {
+                log_error!("{}", err);
+                log_error!("New profile can be created with \"lockbox profile new\"");
+                std::process::exit(1);
+            },
+            Error::KeyError(_) => {
+                log_error!("{}", err);
+                std::process::exit(1);
+            },
+            _ => {
+                log_error!("A fatal error has occurred: {}", err);
+                std::process::exit(1);
+            }
         }
     }
 
@@ -182,24 +268,4 @@ fn get_path_deque(args: &ArgMatches, arg_id: &str) -> Option<VecDeque<PathBuf>> 
     }
 
     None
-}
-
-fn handle_error(err: &Error) -> bool {
-    match err {
-        Error::ProfileError(msg) => {
-            log_error!("{}", msg);
-            log_error!("New profile can be created with \"lockbox profile new\"");
-            std::process::exit(1);
-        }
-        Error::AuthError(msg) => {
-            log_error!("{}", msg);
-            log_error!("Please try again");
-            std::process::exit(1);
-        },
-        Error::InvalidFile(msg) => {
-            log_error!("{}", msg);
-            true
-        },
-        _ => false
-    }
 }
