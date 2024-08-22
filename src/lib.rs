@@ -1,3 +1,4 @@
+use std::ffi::OsStr;
 use std::fs;
 use std::path::{Path, PathBuf};
 use crate::encryption::{checksum, cipher};
@@ -36,7 +37,8 @@ pub fn encrypt(input_path: &Path, password: &str, opts: &mut options::Encryption
         return Err(Error::InvalidFile(format!("\"{}\" is already encrypted", input_path.display())))
     }
 
-    log_success!("Encrypting file {:?}", input_path.file_name().unwrap().to_os_string());
+    let file_name = input_path.file_name().unwrap_or(OsStr::new("unknown")).to_os_string();
+    log_success!("Encrypting file {:?}", file_name);
 
     let mut path_buffer = PathBuf::from(input_path);
     let file_path = path_buffer.as_path();
@@ -84,8 +86,8 @@ pub fn decrypt(input_path: &Path, password: &str, opts: &mut options::Decryption
         return Err(Error::InvalidFile(format!("\"{}\" cannot be decrypted", input_path.display())))
     }
 
-    let file_name = input_path.file_name().unwrap().to_os_string();
-    log_success!("Decrypting file: {:?}", file_name);
+    let file_name = input_path.file_name().unwrap_or(OsStr::new("unknown")).to_os_string();
+    log_success!("Decrypting file {:?}", file_name);
 
     let mut path_buffer = PathBuf::from(input_path);
     let file_path = path_buffer.as_path();

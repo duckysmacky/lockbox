@@ -51,7 +51,9 @@ fn search_for_original(dir_path: &Path, target_name: OsString) -> io::Result<Pat
 
         if !path.is_file() || path.extension().unwrap() != "box" { continue; }
 
-        let original_name = parser::parse_file(path.as_path())?.header.original_filename;
+        let original_name = parser::parse_file(path.as_path())
+            .map_err(|err| io::Error::new(io::ErrorKind::InvalidData, err.to_string()))?
+            .header.original_filename;
 
         if target_name == original_name {
             log_info!("Found an encrypted (.box) file with the same original name: {}", path.display());
