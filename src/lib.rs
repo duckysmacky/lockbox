@@ -1,4 +1,3 @@
-use std::ffi::OsStr;
 use std::fs;
 use std::path::{Path, PathBuf};
 use crate::encryption::{checksum, cipher};
@@ -35,7 +34,7 @@ pub fn encrypt(input_path: &Path, password: &str, opts: &mut options::Encryption
 
     if let Some(extension) = input_path.extension() {
         if extension == "box" {
-            return Err(Error::InvalidFile(format!("\"{}\" is already encrypted", input_path.display())))
+            return Err(Error::InvalidInput("This file is already encrypted".to_string()))
         }
     }
 
@@ -46,7 +45,7 @@ pub fn encrypt(input_path: &Path, password: &str, opts: &mut options::Encryption
     let file_data = io::read_bytes(file_path).map_err(Error::from)?;
     let key = keys::get_key()?;
     let nonce = cipher::generate_nonce();
-    let header = header::generate_header(file_path, &file_data, &nonce);
+    let header = header::generate_header(file_path, &file_data, &nonce)?;
 
     // change the file to be .box instead
     fs::remove_file(file_path)?;
@@ -68,7 +67,7 @@ pub fn encrypt(input_path: &Path, password: &str, opts: &mut options::Encryption
     path_buffer.set_extension("box");
     let file_path = path_buffer.as_path();
 
-    let body = cipher::encrypt(&key, &nonce, &file_data);
+    let body = cipher::encrypt(&key, &nonce, &file_data)?;
     parser::write_file(file_path, header, body)?;
 
     Ok(())
@@ -83,11 +82,9 @@ pub fn decrypt(input_path: &Path, password: &str, opts: &mut options::Decryption
 
     if let Some(extension) = input_path.extension() {
         if extension != "box" {
-            return Err(Error::InvalidFile(format!("\"{}\" cannot be decrypted", input_path.display())))
+            return Err(Error::InvalidInput("This file is not encrypted".to_string()))
         }
     }
-
-    let file_name = input_path.file_name().unwrap_or(OsStr::new("<unknown file name>")).to_os_string();
 
     let mut path_buffer = PathBuf::from(input_path);
     let file_path = path_buffer.as_path();
@@ -95,12 +92,12 @@ pub fn decrypt(input_path: &Path, password: &str, opts: &mut options::Decryption
     let key = keys::get_key()?;
     let box_file = parser::parse_file(file_path)?;
     let header = box_file.header;
-    let body = cipher::decrypt(&key, &header.nonce, &box_file.body);
+    let body = cipher::decrypt(&key, &header.nonce, &box_file.body)?;
 
     log_debug!("Validating checksum");
     let new_checksum = checksum::generate_checksum(&body);
     if new_checksum != header.checksum {
-        return Err(Error::InvalidChecksum(file_name));
+        return Err(Error::InvalidData("Checksum verification failed (data was probably tampered with)".to_string()));
     }
 
     fs::remove_file(file_path)?;

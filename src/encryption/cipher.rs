@@ -3,7 +3,7 @@ use chacha20poly1305::{
     AeadCore, ChaCha20Poly1305
 };
 use rand::rngs::OsRng;
-use crate::log_fatal;
+use crate::{Result, Error};
 
 pub type Key = [u8; 32];
 pub type Nonce = [u8; 12];
@@ -16,24 +16,18 @@ pub fn generate_nonce() -> Nonce {
     ChaCha20Poly1305::generate_nonce(&mut OsRng).into()
 }
 
-pub fn encrypt(key: &Key, nonce: &Nonce, data: &[u8]) -> Vec<u8> {
+pub fn encrypt(key: &Key, nonce: &Nonce, data: &[u8]) -> Result<Vec<u8>> {
     let cipher = ChaCha20Poly1305::new(key.into());
 
-    let ciphertext = cipher.encrypt(nonce.into(), data);
-    if let Err(err) = ciphertext {
-        log_fatal!("Error encrypting data: {}", err);
-    }
-
-    ciphertext.unwrap()
+    let ciphertext = cipher.encrypt(nonce.into(), data)
+        .map_err(|err| Error::CipherError(format!("Encryption error: {}", err)))?;
+    Ok(ciphertext)
 }
 
-pub fn decrypt(key: &Key, nonce: &Nonce, data: &[u8]) -> Vec<u8> {
+pub fn decrypt(key: &Key, nonce: &Nonce, data: &[u8]) -> Result<Vec<u8>> {
     let cipher = ChaCha20Poly1305::new(key.into());
 
-    let plaintext = cipher.decrypt(nonce.into(), data);
-    if let Err(err) = plaintext {
-        log_fatal!("Error decrypting data: {}", err);
-    }
-
-    plaintext.unwrap()
+    let plaintext = cipher.decrypt(nonce.into(), data)
+        .map_err(|err| Error::CipherError(format!("Decryption error: {}", err)))?;
+    Ok(plaintext)
 }

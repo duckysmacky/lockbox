@@ -54,7 +54,7 @@ pub fn create_new_profile(name: &str, password: &str) -> Result<()> {
         return Err(Error::ProfileError(format!("Profile with name \"{}\" already exists", name)));
     }
 
-    let (hash, _salt) = auth::hash_password(password);
+    let (hash, _salt) = auth::hash_password(password)?;
     let profile = Profile {
         name: name.to_string(),
         key: cipher::generate_key(),

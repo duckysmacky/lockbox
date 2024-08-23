@@ -36,6 +36,7 @@ pub fn r#box(g_args: &ArgMatches, args: &ArgMatches) -> (u32, u32) {
             true => path.as_os_str().to_os_string(),
             false => path.file_name().unwrap_or(OsStr::new("<unknown file name>")).to_os_string()
         };
+
         log_success!("Encrypting {:?}", file_name);
 
         if let Err(err) = encrypt(path.as_path(), &password, &mut options) {
@@ -45,28 +46,27 @@ pub fn r#box(g_args: &ArgMatches, args: &ArgMatches) -> (u32, u32) {
                     log_error!("New profile can be created with \"lockbox profile new\"");
                     std::process::exit(1);
                 },
-                Error::KeyError(_) => {
-                    log_error!("{}", err);
-                    std::process::exit(1);
-                },
-                Error::IOError(_) => {
-                    log_error!("Unable to encrypt {:?}: {}", file_name, err);
-                },
-                Error::InvalidChecksum(_) => {
-                    log_error!("{}", err);
-                },
-                Error::InvalidFile(_) => {
-                    log_error!("Invalid file data for {:?}: {}", file_name, err);
-                },
                 Error::AuthError(_) => {
                     log_error!("{}", err);
                     log_error!("Please try again");
                     std::process::exit(1);
+                },
+                Error::IOError(_) => {
+                    log_error!("Unable to access {:?}: {}", file_name, err);
+                    error_files += 1;
+                },
+                Error::CipherError(_) => {
+                    log_error!("{}", err);
+                    error_files += 1;
+                },
+                Error::InvalidData(_) => {
+                    log_error!("Invalid file data in {:?}: {}", file_name, err);
+                    error_files += 1;
+                },
+                Error::InvalidInput(_) => {
+                    log_warn!("Skipping {:?}: {}", file_name, err);
                 }
             }
-
-            log_warn!("Skipping {:?}", file_name);
-            error_files += 1;
         } else {
             log_success!("Successfully encrypted {:?}", file_name);
         }
@@ -107,36 +107,33 @@ pub fn unbox(g_args: &ArgMatches, args: &ArgMatches) -> (u32, u32) {
         log_success!("Decrypting {:?}", file_name);
 
         if let Err(err) = decrypt(path.as_path(), &password, &mut options) {
-            let file_name = path.file_name().unwrap().to_os_string();
-
             match err {
                 Error::ProfileError(_) => {
                     log_error!("{}", err);
                     log_error!("New profile can be created with \"lockbox profile new\"");
                     std::process::exit(1);
                 },
-                Error::KeyError(_) => {
-                    log_error!("{}", err);
-                    std::process::exit(1);
-                },
-                Error::IOError(_) => {
-                    log_error!("Unable to decrypt {:?}: {}", file_name, err);
-                },
-                Error::InvalidChecksum(_) => {
-                    log_error!("{}", err);
-                },
-                Error::InvalidFile(_) => {
-                    log_error!("Invalid file data for {:?}: {}", file_name, err);
-                },
                 Error::AuthError(_) => {
                     log_error!("{}", err);
                     log_error!("Please try again");
                     std::process::exit(1);
+                },
+                Error::IOError(_) => {
+                    log_error!("Unable to access {:?}: {}", file_name, err);
+                    error_files += 1;
+                },
+                Error::CipherError(_) => {
+                    log_error!("{}", err);
+                    error_files += 1;
+                },
+                Error::InvalidData(_) => {
+                    log_error!("Invalid file data in {:?}: {}", file_name, err);
+                    error_files += 1;
+                },
+                Error::InvalidInput(_) => {
+                    log_warn!("Skipping {:?}: {}", file_name, err);
                 }
             }
-
-            log_warn!("Skipping {:?}", file_name);
-            error_files += 1;
         } else {
             log_success!("Successfully decrypted {:?}", path.file_name().unwrap().to_os_string());
         }
@@ -154,7 +151,7 @@ pub fn profile_create(g_args: &ArgMatches, args: &ArgMatches) {
     let name = args.get_one::<String>("NAME").expect("Profile name is required");
 
     if let Err(err) = create_profile(name, &password) {
-        log_error!("A fatal error has occurred: {}", err);
+        log_error!("Unable to create a new profile: {}", err);
         std::process::exit(1);
     }
 
@@ -177,7 +174,7 @@ pub fn profile_delete(g_args: &ArgMatches, args: &ArgMatches) {
                 std::process::exit(1);
             },
             _ => {
-                log_error!("A fatal error has occurred: {}", err);
+                log_error!("Unable to delete the profile: {}", err);
                 std::process::exit(1);
             }
         }
@@ -204,12 +201,8 @@ pub fn key_new(g_args: &ArgMatches, _args: &ArgMatches) {
                 log_error!("New profile can be created with \"lockbox profile new\"");
                 std::process::exit(1);
             },
-            Error::KeyError(_) => {
-                log_error!("{}", err);
-                std::process::exit(1);
-            },
             _ => {
-                log_error!("A fatal error has occurred: {}", err);
+                log_error!("Unable to generate new encryption key: {}", err);
                 std::process::exit(1);
             }
         }
@@ -237,12 +230,8 @@ pub fn key_get(g_args: &ArgMatches, _args: &ArgMatches) {
                 log_error!("New profile can be created with \"lockbox profile new\"");
                 std::process::exit(1);
             },
-            Error::KeyError(_) => {
-                log_error!("{}", err);
-                std::process::exit(1);
-            },
             _ => {
-                log_error!("A fatal error has occurred: {}", err);
+                log_error!("Unable to get key: {}", err);
                 std::process::exit(1);
             }
         }

@@ -13,7 +13,7 @@ pub fn parse_file(path: &Path) -> Result<BoxFile> {
     file.read(&mut buffer)?;
 
     let box_file: BoxFile = bincode::deserialize(&buffer)
-        .map_err(|err| Error::InvalidFile(format!("Unable to deserialize \"{}\" file data for: {}", path.display(), err)))?;
+        .map_err(|err| Error::InvalidData(format!("Unable to deserialize \"{}\" file data for: {}", path.display(), err)))?;
     Ok(box_file)
 }
 
@@ -22,7 +22,7 @@ pub fn write_file(path: &Path, header: BoxHeader, body: Vec<u8>) -> Result<()> {
 
     let box_file = BoxFile {header, body};
     let box_data = bincode::serialize(&box_file)
-        .map_err(|err| Error::InvalidFile(format!("Unable to serialize \"{}\" file data for: {}", path.display(), err)))?;
+        .map_err(|err| Error::InvalidData(format!("Unable to serialize \"{}\" file data for: {}", path.display(), err)))?;
 
     file.write_all(&box_data)?;
 

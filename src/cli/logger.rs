@@ -17,7 +17,7 @@ lazy_static! {
 
 #[derive(PartialEq)]
 pub enum LogType {
-    DEBUG, INFO, WARNING, SUCCESS, ERROR, FATAL
+    DEBUG, INFO, WARNING, SUCCESS, ERROR
 }
 
 enum LoggerMode {
@@ -38,11 +38,6 @@ impl Logger {
     }
 
     pub fn log(&self, log_type: LogType, message: fmt::Arguments<'_>) {
-        if log_type == LogType::FATAL {
-            eprintln!("[{}] {}", get_icon(log_type), message);
-            return;
-        }
-
         if log_type == LogType::DEBUG {
             if !self.debug {
                 return;
@@ -56,10 +51,10 @@ impl Logger {
                 return;
             },
             LoggerMode::NORMAL => {
-                if log_type == LogType::SUCCESS {
-                    println!("[{}] {}", get_icon(log_type), message);
-                } else if log_type == LogType::ERROR {
+                if log_type == LogType::ERROR {
                     eprintln!("[{}] {}", get_icon(log_type), message);
+                } else if log_type == LogType::SUCCESS {
+                    println!("[{}] {}", get_icon(log_type), message);
                 }
             },
             LoggerMode::VERBOSE => {
@@ -143,25 +138,12 @@ macro_rules! log_debug {
     };
 }
 
-#[macro_export]
-macro_rules! log_fatal {
-    ($($arg:tt)*) => {
-        {
-            use crate::cli::logger::*;
-            let logger = LOGGER.lock().unwrap();
-            logger.log(LogType::FATAL, format_args!($($arg)*));
-            panic!()
-        }
-    };
-}
-
 fn get_icon(log_type: LogType) -> String {
     match log_type {
         LogType::INFO => String::from("i"),
-        LogType::WARNING => String::from("*"),
+        LogType::WARNING => String::from("!"),
         LogType::SUCCESS => String::from("+"),
         LogType::ERROR => String::from("-"),
-        LogType::FATAL => String::from("!"),
         LogType::DEBUG => String::from("d")
     }
 }

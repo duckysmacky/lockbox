@@ -1,13 +1,10 @@
 use std::{ffi::OsString, path::Path, fs};
 use crate::encryption::{cipher::Nonce, checksum};
 use crate::file::BoxHeader;
-use crate::log_fatal;
+use crate::Result;
 
-pub fn generate_header(path: &Path, data: &[u8], nonce: &Nonce) -> BoxHeader {
-    let file_data = fs::metadata(path);
-    if let Err(err) = file_data {
-        log_fatal!("Unable to get file metadata: {}", err);
-    }
+pub fn generate_header(path: &Path, data: &[u8], nonce: &Nonce) -> Result<BoxHeader> {
+    let file_data = fs::metadata(path)?;
 
     let mut header = BoxHeader {
         magic: super::header_data::MAGIC,
@@ -21,13 +18,13 @@ pub fn generate_header(path: &Path, data: &[u8], nonce: &Nonce) -> BoxHeader {
             None => OsString::from(""),
             Some(extension) => extension.to_os_string()
         },
-        original_size: file_data.unwrap().len(),
+        original_size: file_data.len(),
         checksum: checksum::generate_checksum(data),
         nonce: *nonce
     };
 
     header.metadata_length = get_metadata_length(&header);
-    header
+    Ok(header)
 }
 
 fn get_metadata_length(header: &BoxHeader) -> u16 {
