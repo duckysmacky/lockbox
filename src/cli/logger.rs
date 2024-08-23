@@ -75,11 +75,11 @@ impl Logger {
 
 pub fn configure_logger(args: &ArgMatches) {
     let mut logger = LOGGER.lock().unwrap();
-    logger.debug = args.get_flag("debug");
+    logger.debug = args.get_flag("DEBUG-MODE");
     logger.mode = {
-        if args.get_flag("quiet") {
+        if args.get_flag("QUIET-OUTPUT") {
             LoggerMode::QUIET
-        } else if args.get_flag("verbose") {
+        } else if args.get_flag("VERBOSE-OUTPUT") {
             LoggerMode::VERBOSE
         } else {
             LoggerMode::NORMAL

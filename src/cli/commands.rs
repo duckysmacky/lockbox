@@ -13,18 +13,18 @@ pub fn r#box(g_args: &ArgMatches, args: &ArgMatches) -> (u32, u32) {
 
     // options for path parsing
     let options = path::PathOptions {
-        input_paths: get_path_vec(args, "path").expect("File path is required"),
-        recursive: args.get_flag("recursive")
+        input_paths: get_path_vec(args, "PATH").expect("File path is required"),
+        recursive: args.get_flag("RECURSIVE-SEARCH")
     };
     path::parse_paths(&mut file_paths, options);
 
     // options for encryption
     let mut options = options::EncryptionOptions {
-        keep_name: args.get_flag("keep-name"),
-        output_paths: get_path_deque(args, "output-path")
+        keep_original_name: args.get_flag("KEEP-ORIGINAL-NAME"),
+        output_paths: get_path_deque(args, "OUTPUT-PATH")
     };
 
-    let password = match g_args.get_one::<String>("password") {
+    let password = match g_args.get_one::<String>("PASSWORD") {
         None => prompts::prompt_password("Please enter the password for the current profile:"),
         Some(password) => password.to_string()
     };
@@ -32,10 +32,13 @@ pub fn r#box(g_args: &ArgMatches, args: &ArgMatches) -> (u32, u32) {
     // encrypt each file and handle errors accordingly
     for path in file_paths {
         total_files += 1;
+        let file_name = match args.get_flag("SHOW-FULL-PATH") {
+            true => path.as_os_str().to_os_string(),
+            false => path.file_name().unwrap_or(OsStr::new("<unknown file name>")).to_os_string()
+        };
+        log_success!("Encrypting {:?}", file_name);
 
         if let Err(err) = encrypt(path.as_path(), &password, &mut options) {
-            let file_name = path.file_name().unwrap_or(OsStr::new("unknown file name")).to_os_string();
-
             match err {
                 Error::ProfileError(_) => {
                     log_error!("{}", err);
@@ -62,11 +65,11 @@ pub fn r#box(g_args: &ArgMatches, args: &ArgMatches) -> (u32, u32) {
                 }
             }
 
-            log_warn!("Skipping file {:?}", file_name);
+            log_warn!("Skipping {:?}", file_name);
             error_files += 1;
+        } else {
+            log_success!("Successfully encrypted {:?}", file_name);
         }
-
-        log_success!("Successfully encrypted {:?}", path.file_name().unwrap().to_os_string());
     }
 
     (total_files, error_files)
@@ -79,17 +82,17 @@ pub fn unbox(g_args: &ArgMatches, args: &ArgMatches) -> (u32, u32) {
 
     // options for path parsing
     let options = path::PathOptions {
-        input_paths: get_path_vec(args, "path").expect("File path is required"),
-        recursive: args.get_flag("recursive")
+        input_paths: get_path_vec(args, "PATH").expect("File path is required"),
+        recursive: args.get_flag("RECURSIVE-SEARCH")
     };
     path::parse_paths(&mut file_paths, options);
 
     // options for decryption
     let mut options = options::DecryptionOptions {
-        output_paths: get_path_deque(args, "output-path")
+        output_paths: get_path_deque(args, "OUTPUT-PATH")
     };
 
-    let password = match g_args.get_one::<String>("password") {
+    let password = match g_args.get_one::<String>("PASSWORD") {
         None => prompts::prompt_password("Please enter the password for the current profile:"),
         Some(password) => password.to_string()
     };
@@ -97,6 +100,11 @@ pub fn unbox(g_args: &ArgMatches, args: &ArgMatches) -> (u32, u32) {
     // decrypt each file and handle errors accordingly
     for path in file_paths {
         total_files += 1;
+        let file_name = match args.get_flag("SHOW-FULL-PATH") {
+            true => path.as_os_str().to_os_string(),
+            false => path.file_name().unwrap_or(OsStr::new("<unknown file name>")).to_os_string()
+        };
+        log_success!("Decrypting {:?}", file_name);
 
         if let Err(err) = decrypt(path.as_path(), &password, &mut options) {
             let file_name = path.file_name().unwrap().to_os_string();
@@ -127,23 +135,23 @@ pub fn unbox(g_args: &ArgMatches, args: &ArgMatches) -> (u32, u32) {
                 }
             }
 
-            log_warn!("Skipping file {:?}", file_name);
+            log_warn!("Skipping {:?}", file_name);
             error_files += 1;
+        } else {
+            log_success!("Successfully decrypted {:?}", path.file_name().unwrap().to_os_string());
         }
-
-        log_success!("Successfully decrypted {:?}", path.file_name().unwrap().to_os_string());
     }
 
     (total_files, error_files)
 }
 
 pub fn profile_create(g_args: &ArgMatches, args: &ArgMatches) {
-    let password = match g_args.get_one::<String>("password") {
+    let password = match g_args.get_one::<String>("PASSWORD") {
         None => prompts::prompt_password("Please enter a password for the new profile:"),
         Some(password) => password.to_string()
     };
 
-    let name = args.get_one::<String>("name").expect("Profile name is required");
+    let name = args.get_one::<String>("NAME").expect("Profile name is required");
 
     if let Err(err) = create_profile(name, &password) {
         log_error!("A fatal error has occurred: {}", err);
@@ -154,12 +162,12 @@ pub fn profile_create(g_args: &ArgMatches, args: &ArgMatches) {
 }
 
 pub fn profile_delete(g_args: &ArgMatches, args: &ArgMatches) {
-    let password = match g_args.get_one::<String>("password") {
+    let password = match g_args.get_one::<String>("PASSWORD") {
         None => prompts::prompt_password("Please enter the password for the target profile"),
         Some(password) => password.to_string()
     };
 
-    let name = args.get_one::<String>("name").expect("Profile name is required");
+    let name = args.get_one::<String>("NAME").expect("Profile name is required");
 
     if let Err(err) = delete_profile(name, &password) {
         match err {
@@ -179,7 +187,7 @@ pub fn profile_delete(g_args: &ArgMatches, args: &ArgMatches) {
 }
 
 pub fn key_new(g_args: &ArgMatches, _args: &ArgMatches) {
-    let password = match g_args.get_one::<String>("password") {
+    let password = match g_args.get_one::<String>("PASSWORD") {
         None => prompts::prompt_password("Please enter the password for the current profile:"),
         Some(password) => password.to_string()
     };
@@ -211,7 +219,7 @@ pub fn key_new(g_args: &ArgMatches, _args: &ArgMatches) {
 }
 
 pub fn key_get(g_args: &ArgMatches, _args: &ArgMatches) {
-    let password = match g_args.get_one::<String>("password") {
+    let password = match g_args.get_one::<String>("PASSWORD") {
         None => prompts::prompt_password("Please enter the password for the current profile:"),
         Some(password) => password.to_string()
     };
@@ -252,7 +260,6 @@ fn get_path_vec(args: &ArgMatches, arg_id: &str) -> Option<Vec<PathBuf>> {
             .collect::<Vec<PathBuf>>()
         )
     }
-
     None
 }
 
@@ -266,6 +273,5 @@ fn get_path_deque(args: &ArgMatches, arg_id: &str) -> Option<VecDeque<PathBuf>> 
 
         return Some(deque)
     }
-
     None
 }
