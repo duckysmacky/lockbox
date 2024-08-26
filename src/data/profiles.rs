@@ -6,7 +6,7 @@ use crate::{Error, log_debug, Result};
 
 const PROFILES_FILE_PATH: &str = "profiles.json";
 
-pub fn _set_current_profile(profile_name: &str) -> Result<()> {
+pub fn set_current_profile(profile_name: &str) -> Result<()> {
     log_debug!("Setting current profile to \"{}\"", profile_name);
 
     let profiles_data = get_profiles_file();
@@ -97,7 +97,7 @@ pub fn delete_profile(profile_name: &str) -> Result<()> {
                 if profiles_data.profiles.is_empty() {
                     None
                 } else {
-                    Some(profiles_data.profiles.get(profiles_data.profiles.len() - 1).unwrap().name.clone())
+                    Some(profiles_data.profiles.get(0).unwrap().name.clone())
                 }
             };
             save_profiles_file(profiles_data)?;
@@ -111,7 +111,6 @@ pub fn save_profile(profile: Profile) -> io::Result<()> {
     log_debug!("Saving profile data: {:?}", profile);
 
     let mut profiles_data = get_profiles_file()?;
-    profiles_data.current_profile = Some(profile.name.clone());
     profiles_data.profiles.push(profile);
 
     save_profiles_file(profiles_data)

@@ -156,6 +156,21 @@ pub fn delete_profile(password: &str, profile_name: &str) -> Result<()> {
     profiles::delete_profile(profile_name)
 }
 
+pub fn select_profile(password: &str, profile_name: &str) -> Result<()> {
+    let profile = profiles::get_profile(profile_name)?;
+
+    if !auth::verify_password(password, profile) {
+        return Err(Error::AuthError("Invalid password entered".to_string()))
+    }
+
+    if profile_name == profiles::get_current_profile()?.name {
+        return Err(Error::InvalidInput(format!("Current profile is already set to \"{}\"", profile_name)))
+    }
+
+    log_info!("Switching profile to \"{}\"", profile_name);
+    profiles::set_current_profile(profile_name)
+}
+
 pub fn get_profiles() -> Result<Vec<String>> {
     log_info!("Listing all available profiles");
 

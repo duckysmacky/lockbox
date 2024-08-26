@@ -34,6 +34,11 @@ fn main() -> io::Result<()> {
             commands::profile_delete(global_args, args);
         }
 
+        /* PROFILE SET */
+        if let Some(args) = args.subcommand_matches("set") {
+            commands::profile_set(global_args, args);
+        }
+
         /* PROFILE LIST */
         if let Some(args) = args.subcommand_matches("list") {
             commands::profile_list(global_args, args);
