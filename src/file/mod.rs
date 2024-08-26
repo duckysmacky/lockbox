@@ -1,6 +1,7 @@
 use std::ffi::OsString;
 use serde::{Deserialize, Serialize};
-use crate::encryption::{cipher::Nonce, checksum::Checksum};
+use crate::Checksum;
+use crate::Nonce;
 
 pub mod io;
 pub mod parser;

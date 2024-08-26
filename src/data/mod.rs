@@ -4,7 +4,7 @@ pub mod profiles;
 
 use std::{path::PathBuf, env, fs};
 use serde::{Deserialize, Serialize};
-use crate::encryption::cipher::Key;
+use crate::Key;
 
 #[derive(Serialize, Deserialize, Debug)]
 struct ProfilesData {

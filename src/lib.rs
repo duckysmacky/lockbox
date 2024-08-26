@@ -1,9 +1,8 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 use crate::encryption::{checksum, cipher};
-use crate::file::{parser, io, header};
+use crate::file::{header, io, parser};
 use crate::data::{auth, keys, profiles};
-
 pub use crate::error::{Error, Result};
 
 pub mod cli;
@@ -11,6 +10,10 @@ mod encryption;
 mod data;
 mod error;
 mod file;
+
+pub type Key = [u8; 32];
+pub type Nonce = [u8; 12];
+pub type Checksum = [u8; 32];
 
 pub mod options {
     use std::{collections::VecDeque, path::PathBuf};

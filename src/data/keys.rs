@@ -1,6 +1,6 @@
-use crate::{Result, Error, log_debug};
+use crate::{Error, Key, log_debug, Result};
 use crate::data::profiles::{get_current_profile, save_profile};
-use crate::encryption::cipher::{self, Key};
+use crate::encryption::cipher::{self};
 
 pub fn get_key() -> Result<Key> {
     log_debug!("Getting encryption key from current profile");

@@ -1,27 +1,42 @@
+use std::io::{self, BufReader, Write};
 use std::fs::File;
-use std::io;
-use std::io::{BufReader, Write};
-use crate::data::{get_data_dir, Profile, ProfilesData};
-use crate::{Error, log_debug, Result};
-use crate::data::auth;
+use crate::data::{auth, get_data_dir, Profile, ProfilesData};
 use crate::encryption::cipher;
+use crate::{Error, log_debug, Result};
 
 const PROFILES_FILE_PATH: &str = "profiles.json";
+
+pub fn set_current_profile(profile_name: &str) -> Result<()> {
+    log_debug!("Setting current profile to \"{}\"", profile_name);
+
+    let profiles_data = get_profiles_file();
+    if let Err(err) = profiles_data {
+        if err.kind() == io::ErrorKind::NotFound {
+            return Err(Error::ProfileError("No profile data found".to_string()))
+        }
+        return Err(Error::IOError(format!("Error getting profiles data: {}", err)))
+    }
+    let mut profiles_data = profiles_data.unwrap();
+    profiles_data.current_profile = Some(profile_name.to_string());
+
+    save_profiles_file(profiles_data)
+        .map_err(|err| Error::from(err))
+}
 
 pub fn get_current_profile() -> Result<Profile> {
     log_debug!("Getting current profile");
 
-    let profiles = get_profiles_file();
-    if let Err(err) = profiles {
+    let profiles_data = get_profiles_file();
+    if let Err(err) = profiles_data {
         if err.kind() == io::ErrorKind::NotFound {
             return Err(Error::ProfileError("No profile data found".to_string()))
         }
         return Err(Error::IOError(format!("Error getting profiles data: {}", err)))
     }
 
-    let current_profile = profiles.unwrap().current_profile;
+    let current_profile = profiles_data.unwrap().current_profile;
     if current_profile.is_none() {
-        return Err(Error::ProfileError("Current profile doesn\'t exist".to_string()))
+        return Err(Error::ProfileError("No profile is currently selected".to_string()))
     }
 
     let profile = get_profile(&current_profile.unwrap())?;
@@ -31,20 +46,26 @@ pub fn get_current_profile() -> Result<Profile> {
 pub fn get_profile(profile_name: &str) -> Result<Profile> {
     log_debug!("Getting profile with name \"{}\"", profile_name);
 
-    let profiles = get_profiles_file();
-    if let Err(err) = profiles {
+    for profile in get_profiles()? {
+        if profile.name == profile_name {
+            return Ok(profile)
+        }
+    }
+    Err(Error::ProfileError(format!("Profile with name \"{}\" doesn\'t exist", profile_name)))
+}
+
+pub fn get_profiles() -> Result<Vec<Profile>> {
+    log_debug!("Getting all available profiles");
+
+    let profiles_data = get_profiles_file();
+    if let Err(err) = profiles_data {
         if err.kind() == io::ErrorKind::NotFound {
             return Err(Error::ProfileError("No profile data found".to_string()))
         }
         return Err(Error::IOError(format!("Error getting profiles data: {}", err)))
     }
 
-    for profile in profiles.unwrap().profiles {
-        if profile.name == profile_name {
-            return Ok(profile)
-        }
-    }
-    Err(Error::ProfileError(format!("Profile with name \"{}\" doesn\'t exist", profile_name)))
+    Ok(profiles_data.unwrap().profiles)
 }
 
 pub fn create_new_profile(name: &str, password: &str) -> Result<()> {

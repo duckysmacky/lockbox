@@ -3,10 +3,7 @@ use chacha20poly1305::{
     AeadCore, ChaCha20Poly1305
 };
 use rand::rngs::OsRng;
-use crate::{Result, Error};
-
-pub type Key = [u8; 32];
-pub type Nonce = [u8; 12];
+use crate::{Error, Key, Nonce, Result};
 
 pub fn generate_key() -> Key {
     ChaCha20Poly1305::generate_key(&mut OsRng).into()

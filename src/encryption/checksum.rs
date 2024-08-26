@@ -1,6 +1,5 @@
 use sha2::{Digest, Sha256};
-
-pub type Checksum = [u8; 32];
+use crate::Checksum;
 
 pub fn generate_checksum(data: &[u8]) -> Checksum {
     let mut hasher = Sha256::new();
