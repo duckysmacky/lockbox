@@ -107,11 +107,21 @@ pub fn delete_profile(profile_name: &str) -> Result<()> {
     Err(Error::ProfileError(format!("Profile with name \"{}\" doesn\'t exist", profile_name)))
 }
 
-pub fn save_profile(profile: Profile) -> io::Result<()> {
-    log_debug!("Saving profile data: {:?}", profile);
+pub fn save_profile(updated_profile: Profile) -> io::Result<()> {
+    log_debug!("Saving profile data: {:?}", &updated_profile);
 
     let mut profiles_data = get_profiles_file()?;
-    profiles_data.profiles.push(profile);
+    let profile_name = updated_profile.name.clone();
+    for (i, profile) in profiles_data.profiles.iter().enumerate() {
+        if profile.name == profile_name {
+            profiles_data.profiles.insert(i, updated_profile);
+            break;
+        }
+        if i == profiles_data.profiles.len() {
+            profiles_data.profiles.push(updated_profile);
+            break;
+        }
+    }
 
     save_profiles_file(profiles_data)
 }

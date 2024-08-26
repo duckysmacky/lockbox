@@ -197,9 +197,9 @@ pub fn get_command() -> Command {
             )
             /* SET KEY SUBCOMMAND */
             .subcommand(Command::new("set")
-                .about("Set current profile\'s encryption key")
-                .arg(Arg::new("NEW_KEY")
-                    .help("Value of the new key")
+                .about("Set a new key for the current profile")
+                .arg(Arg::new("KEY")
+                    .help("A 32-byte encryption key represented by hex values (e.g.: DA495EFCF25904AC2FF438BE380FF660E150E65B03AC543398C43AD4FC617962)")
                     .required(true)
                 )
             )

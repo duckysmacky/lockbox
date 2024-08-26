@@ -318,7 +318,7 @@ pub fn key_get(g_args: &ArgMatches, args: &ArgMatches) {
                 std::process::exit(1);
             },
             _ => {
-                log_error!("Unable to get key: {}", err);
+                log_error!("Unable to get the key: {}", err);
                 std::process::exit(1);
             }
         }
@@ -334,7 +334,7 @@ pub fn key_set(g_args: &ArgMatches, args: &ArgMatches) {
         Some(password) => password.to_string()
     };
 
-	let new_key = args.get_one::<String>("NEW_KEY").expect("New key is required");
+	let new_key = args.get_one::<String>("KEY").expect("Key is required");
 
     let key = set_key(&password, &new_key);
     if let Err(err) = &key {
@@ -350,18 +350,17 @@ pub fn key_set(g_args: &ArgMatches, args: &ArgMatches) {
                 std::process::exit(1);
             },
 			Error::InvalidInput(_) => {
-				log_error!("{}", err);
-                log_error!("Please try again");
+				log_error!("Invalid key provided: {}", err);
                 std::process::exit(1);
 			},
             _ => {
-                log_error!("Unable to get key: {}", err);
+                log_error!("Unable to set a new key: {}", err);
                 std::process::exit(1);
             }
         }
     }
 
-    log_success!("New encryption key for the current profile:\n    {}", key.unwrap());
+    log_success!("Successfully set a new encryption key for the current profile");
 }
 
 fn get_path_vec(args: &ArgMatches, arg_id: &str) -> Option<Vec<PathBuf>> {

@@ -214,7 +214,7 @@ pub fn get_key(password: &str, opts: options::GetKeyOptions) -> Result<String> {
     Ok(format!("{:?}", key))
 }
 
-pub fn set_key(password: &str, new_key: &str) -> Result<String> {
+pub fn set_key(password: &str, new_key: &str) -> Result<()> {
 	let profile = profiles::get_current_profile()?;
 
     if !auth::verify_password(password, profile) {
@@ -222,7 +222,8 @@ pub fn set_key(password: &str, new_key: &str) -> Result<String> {
     }
 
     log_info!("Setting the encryption key from the current profile");
-	keys::set_key(utils::hex::hex_string_to_key(new_key.to_string())?)?;
+    let new_key = utils::hex::hex_string_to_key(new_key.to_string())?;
+	keys::set_key(new_key)?;
 
-	Ok(new_key.to_string())
+	Ok(())
 }
