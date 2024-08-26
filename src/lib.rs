@@ -26,6 +26,10 @@ pub mod options {
     pub struct DecryptionOptions {
         pub output_paths: Option<VecDeque<PathBuf>>
     }
+
+    pub struct GetKeyOptions {
+        pub byte_format: bool
+    }
 }
 
 pub fn encrypt(input_path: &Path, password: &str, opts: &mut options::EncryptionOptions) -> Result<()> {
@@ -157,6 +161,20 @@ pub fn new_key(password: &str) -> Result<()> {
     keys::generate_new_key()
 }
 
-pub fn get_key(_password: &str) -> Result<String> {
-    todo!()
+pub fn get_key(password: &str, opts: options::GetKeyOptions) -> Result<String> {
+    let profile = profiles::get_current_profile()?;
+
+    if !auth::verify_password(password, profile) {
+        return Err(Error::AuthError("Invalid password entered".to_string()))
+    }
+
+    log_info!("Retrieving the encryption key from the current profile");
+    let key = keys::get_key()?;
+    if !opts.byte_format {
+        return match std::str::from_utf8(&key) {
+            Ok(str_key) => Ok(str_key.to_string()),
+            Err(_) => Err(Error::InvalidData("Unable to convert encryption key into a UTF-8 string format".to_string())),
+        };
+    }
+    Ok(format!("{:?}", key))
 }

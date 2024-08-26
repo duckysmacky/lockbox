@@ -170,6 +170,12 @@ pub fn get_command() -> Command {
             /* GET KEY SUBCOMMAND */
             .subcommand(Command::new("get")
                 .about("Get current profile\'s encryption key")
+                .arg(Arg::new("BYTE-FORMAT")
+                    .help("Output key in a raw byte format (byte slice)")
+                    .short('b')
+                    .long("byte")
+                    .action(ArgAction::SetTrue)
+                )
             )
         )
 }

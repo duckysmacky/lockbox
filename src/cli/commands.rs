@@ -211,13 +211,17 @@ pub fn key_new(g_args: &ArgMatches, _args: &ArgMatches) {
     log_success!("Successfully generated new encryption key for the current profile");
 }
 
-pub fn key_get(g_args: &ArgMatches, _args: &ArgMatches) {
+pub fn key_get(g_args: &ArgMatches, args: &ArgMatches) {
     let password = match g_args.get_one::<String>("PASSWORD") {
         None => prompts::prompt_password("Please enter the password for the current profile:"),
         Some(password) => password.to_string()
     };
 
-    let key = get_key(&password);
+    let options = options::GetKeyOptions {
+        byte_format: args.get_flag("BYTE-FORMAT"),
+    };
+
+    let key = get_key(&password, options);
     if let Err(err) = &key {
         match err {
             Error::AuthError(_) => {
@@ -238,8 +242,7 @@ pub fn key_get(g_args: &ArgMatches, _args: &ArgMatches) {
     }
 
     // TODO: add current profile name
-    log_success!("Encryption key for the current profile:");
-    log_success!("{}", key.unwrap());
+    log_success!("Encryption key for the current profile:\n    {}", key.unwrap());
 }
 
 fn get_path_vec(args: &ArgMatches, arg_id: &str) -> Option<Vec<PathBuf>> {

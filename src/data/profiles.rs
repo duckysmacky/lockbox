@@ -6,7 +6,7 @@ use crate::{Error, log_debug, Result};
 
 const PROFILES_FILE_PATH: &str = "profiles.json";
 
-pub fn set_current_profile(profile_name: &str) -> Result<()> {
+pub fn _set_current_profile(profile_name: &str) -> Result<()> {
     log_debug!("Setting current profile to \"{}\"", profile_name);
 
     let profiles_data = get_profiles_file();
