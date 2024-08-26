@@ -3,36 +3,42 @@ use std::path::{Path, PathBuf};
 use crate::encryption::{checksum, cipher};
 use crate::file::{header, io, parser};
 use crate::data::{auth, keys, profiles};
-pub use crate::error::{Error, Result};
+
+pub use error::{Result, Error};
 
 pub mod cli;
 mod encryption;
 mod data;
-mod error;
 mod file;
+mod error;
 
 pub type Key = [u8; 32];
 pub type Nonce = [u8; 12];
 pub type Checksum = [u8; 32];
 
+/// Contains extra options for each API function
 pub mod options {
     use std::{collections::VecDeque, path::PathBuf};
 
     pub struct EncryptionOptions {
+        /// Don't replace the name with a random UUID for the encrypted file
         pub keep_original_name: bool,
+        /// Contains an output path for each file
         pub output_paths: Option<VecDeque<PathBuf>>
     }
 
     pub struct DecryptionOptions {
+        /// Contains an output path for each file
         pub output_paths: Option<VecDeque<PathBuf>>
     }
 
     pub struct GetKeyOptions {
+        /// Format encryption key as list of bytes
         pub byte_format: bool
     }
 }
 
-pub fn encrypt(input_path: &Path, password: &str, opts: &mut options::EncryptionOptions) -> Result<()> {
+pub fn encrypt(password: &str, input_path: &Path, opts: &mut options::EncryptionOptions) -> Result<()> {
     let profile = profiles::get_current_profile()?;
 
     if !auth::verify_password(password, profile) {
@@ -80,7 +86,7 @@ pub fn encrypt(input_path: &Path, password: &str, opts: &mut options::Encryption
     Ok(())
 }
 
-pub fn decrypt(input_path: &Path, password: &str, opts: &mut options::DecryptionOptions) -> Result<()> {
+pub fn decrypt(password: &str, input_path: &Path, opts: &mut options::DecryptionOptions) -> Result<()> {
     let profile = profiles::get_current_profile()?;
 
     if !auth::verify_password(password, profile) {
@@ -134,12 +140,12 @@ pub fn decrypt(input_path: &Path, password: &str, opts: &mut options::Decryption
     Ok(())
 }
 
-pub fn create_profile(profile_name: &str, password: &str) -> Result<()> {
+pub fn create_profile(password: &str, profile_name: &str) -> Result<()> {
     log_info!("Creating a new profile with name \"{}\"", profile_name);
     profiles::create_new_profile(profile_name, password)
 }
 
-pub fn delete_profile(profile_name: &str, password: &str) -> Result<()> {
+pub fn delete_profile(password: &str, profile_name: &str) -> Result<()> {
     let profile = profiles::get_profile(profile_name)?;
 
     if !auth::verify_password(password, profile) {
