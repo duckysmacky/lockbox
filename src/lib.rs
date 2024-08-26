@@ -156,6 +156,15 @@ pub fn delete_profile(password: &str, profile_name: &str) -> Result<()> {
     profiles::delete_profile(profile_name)
 }
 
+pub fn get_profiles() -> Result<Vec<String>> {
+    log_info!("Listing all available profiles");
+
+    let profiles = profiles::get_profiles()?.iter()
+        .map(|p| p.name.to_string())
+        .collect::<Vec<String>>();
+    Ok(profiles)
+}
+
 pub fn new_key(password: &str) -> Result<()> {
     let profile = profiles::get_current_profile()?;
 

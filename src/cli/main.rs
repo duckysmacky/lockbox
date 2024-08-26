@@ -33,6 +33,11 @@ fn main() -> io::Result<()> {
         if let Some(args) = args.subcommand_matches("delete") {
             commands::profile_delete(global_args, args);
         }
+
+        /* PROFILE LIST */
+        if let Some(args) = args.subcommand_matches("list") {
+            commands::profile_list(global_args, args);
+        }
     }
 
     /* KEY */

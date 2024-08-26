@@ -158,6 +158,11 @@ pub fn get_command() -> Command {
                     .required(true)
                 )
             )
+            /* LIST PROFILE SUBCOMMAND */
+            .subcommand(Command::new("list")
+                .about("List all available profiles (names)")
+                .alias("get")
+            )
         )
         /* KEY SUBCOMMAND */
         .subcommand(Command::new("key")

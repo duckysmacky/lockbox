@@ -1,10 +1,9 @@
 use std::{collections::VecDeque, path::PathBuf};
 use std::ffi::OsStr;
 use clap::ArgMatches;
-use crate::cli::path;
-use crate::{create_profile, delete_profile, Error, get_key, log_warn, options};
+use crate::cli::{path, prompts};
+use crate::{create_profile, delete_profile, Error, get_key, get_profiles, log_warn, options};
 use crate::{decrypt, encrypt, log_error, log_success, new_key};
-use crate::cli::prompts;
 
 pub fn r#box(g_args: &ArgMatches, args: &ArgMatches) -> (u32, u32) {
     let mut total_files: u32 = 0;
@@ -39,12 +38,12 @@ pub fn r#box(g_args: &ArgMatches, args: &ArgMatches) -> (u32, u32) {
 
         log_success!("Encrypting {:?}", file_name);
 
-        if let Err(err) = encrypt(path.as_path(), &password, &mut options) {
+        if let Err(err) = encrypt(&password, path.as_path(), &mut options) {
             match err {
                 Error::ProfileError(_) => {
                     log_error!("{}", err);
                     log_error!("New profile can be created with \"lockbox profile new\"");
-                    std::process::exit(1);
+                    std::process::exit(0);
                 },
                 Error::AuthError(_) => {
                     log_error!("{}", err);
@@ -106,12 +105,12 @@ pub fn unbox(g_args: &ArgMatches, args: &ArgMatches) -> (u32, u32) {
         };
         log_success!("Decrypting {:?}", file_name);
 
-        if let Err(err) = decrypt(path.as_path(), &password, &mut options) {
+        if let Err(err) = decrypt(&password, path.as_path(), &mut options) {
             match err {
                 Error::ProfileError(_) => {
                     log_error!("{}", err);
                     log_error!("New profile can be created with \"lockbox profile new\"");
-                    std::process::exit(1);
+                    std::process::exit(0);
                 },
                 Error::AuthError(_) => {
                     log_error!("{}", err);
@@ -170,8 +169,8 @@ pub fn profile_delete(g_args: &ArgMatches, args: &ArgMatches) {
         match err {
             Error::AuthError(_) => {
                 log_error!("{}", err);
-                log_error!("Please try again");
-                std::process::exit(1);
+                log_error!("New profile can be created with \"lockbox profile new\"");
+                std::process::exit(0);
             },
             _ => {
                 log_error!("Unable to delete the profile: {}", err);
@@ -183,6 +182,37 @@ pub fn profile_delete(g_args: &ArgMatches, args: &ArgMatches) {
     log_success!("Successfully deleted profile \"{}\"", name);
 }
 
+pub fn profile_list(_g_args: &ArgMatches, _args: &ArgMatches) {
+    let profiles = get_profiles();
+    if let Err(err) = profiles {
+        match err {
+            Error::ProfileError(_) => {
+                log_error!("{}", err);
+                log_error!("New profile can be created with \"lockbox profile new\"");
+                std::process::exit(0);
+            },
+            _ => {
+                log_error!("Unable to list profiles: {}", err);
+                std::process::exit(1);
+            }
+        }
+    }
+
+    let profiles = profiles.unwrap();
+    let count = profiles.len();
+
+    if count == 0 {
+        log_success!("No profiles found");
+        log_success!("New profile can be created with \"lockbox profile new\"");
+    } else {
+        if count > 1 {log_success!("There are {} profiles found:", count);}
+        else {log_success!("There is {} profile found:", count);}
+        for name in profiles {
+            println!("    - {}", name)
+        }
+    }
+}
+
 pub fn key_new(g_args: &ArgMatches, _args: &ArgMatches) {
     let password = match g_args.get_one::<String>("PASSWORD") {
         None => prompts::prompt_password("Please enter the password for the current profile:"),
@@ -191,14 +221,14 @@ pub fn key_new(g_args: &ArgMatches, _args: &ArgMatches) {
 
     if let Err(err) = new_key(&password) {
         match err {
-            Error::AuthError(_) => {
-                log_error!("{}", err);
-                log_error!("Please try again");
-                std::process::exit(1);
-            },
             Error::ProfileError(_) => {
                 log_error!("{}", err);
                 log_error!("New profile can be created with \"lockbox profile new\"");
+                std::process::exit(0);
+            },
+            Error::AuthError(_) => {
+                log_error!("{}", err);
+                log_error!("Please try again");
                 std::process::exit(1);
             },
             _ => {
@@ -224,14 +254,14 @@ pub fn key_get(g_args: &ArgMatches, args: &ArgMatches) {
     let key = get_key(&password, options);
     if let Err(err) = &key {
         match err {
-            Error::AuthError(_) => {
-                log_error!("{}", err);
-                log_error!("Please try again");
-                std::process::exit(1);
-            },
             Error::ProfileError(_) => {
                 log_error!("{}", err);
                 log_error!("New profile can be created with \"lockbox profile new\"");
+                std::process::exit(0);
+            },
+            Error::AuthError(_) => {
+                log_error!("{}", err);
+                log_error!("Please try again");
                 std::process::exit(1);
             },
             _ => {
