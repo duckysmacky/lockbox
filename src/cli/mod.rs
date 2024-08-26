@@ -195,5 +195,13 @@ pub fn get_command() -> Command {
                     .action(ArgAction::SetTrue)
                 )
             )
+            /* SET KEY SUBCOMMAND */
+            .subcommand(Command::new("set")
+                .about("Set current profile\'s encryption key")
+                .arg(Arg::new("NEW_KEY")
+                    .help("Value of the new key")
+                    .required(true)
+                )
+            )
         )
 }

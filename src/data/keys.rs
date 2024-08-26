@@ -9,6 +9,18 @@ pub fn get_key() -> Result<Key> {
     Ok(profile_data.key)
 }
 
+pub fn set_key(new_key: Key) -> Result<()> {
+    log_debug!("Setting new encryption key for current profile");
+
+    let mut profile = get_current_profile()?;
+    profile.key = new_key;
+
+	println!("here {:?}", profile.key);
+
+    save_profile(profile)
+        .map_err(|err| Error::from(err))
+}
+
 pub fn generate_new_key() -> Result<()> {
     log_debug!("Generating new encryption key for current profile");
 

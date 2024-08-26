@@ -18,7 +18,7 @@ pub fn hex_string_to_key(hex: String) -> Result<Key> {
     let mut res: Key = [0; 32];
     let safe_chars: &str = "0123456789ABCDEF";
     if hex.len() != 64 {
-        return Err(Error::InvalidInput("Hex string has invalid length!".to_string()));
+        return Err(Error::InvalidInput("Hex string has invalid length".to_string()));
     }
     let mut i: usize = 0;
     while i < hex.len() {
@@ -26,7 +26,7 @@ pub fn hex_string_to_key(hex: String) -> Result<Key> {
         let c1: char = hex.chars().nth(i).unwrap();
         let c2: char = hex.chars().nth(i + 1).unwrap();
         if !safe_chars.contains(c1) || !safe_chars.contains(c2) {
-            return Err(Error::InvalidInput(format!("Invalid byte '{}{}' in hex string!", c1, c2)));
+            return Err(Error::InvalidInput(format!("Invalid byte '{}{}' in hex string", c1, c2)));
         }
         // we can just unwrap this too since we sanity-checked the characters beforehand
         res[i / 2] = u8::from_str_radix(&format!("{}{}", c1, c2), 16).unwrap();
