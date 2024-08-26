@@ -167,10 +167,14 @@ pub fn get_command() -> Command {
                     .required(true)
                 )
             )
+            /* GET PROFILE SUBCOMMAND */
+            .subcommand(Command::new("get")
+                .about("Get current profile's name")
+                .alias("current")
+            )
             /* LIST PROFILE SUBCOMMAND */
             .subcommand(Command::new("list")
                 .about("List all available profiles (names)")
-                .alias("get")
             )
         )
         /* KEY SUBCOMMAND */

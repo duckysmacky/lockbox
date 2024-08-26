@@ -28,17 +28,18 @@ fn main() -> io::Result<()> {
         if let Some(args) = args.subcommand_matches("create") {
             commands::profile_create(global_args, args);
         }
-
         /* PROFILE DELETE */
         if let Some(args) = args.subcommand_matches("delete") {
             commands::profile_delete(global_args, args);
         }
-
         /* PROFILE SET */
         if let Some(args) = args.subcommand_matches("set") {
             commands::profile_set(global_args, args);
         }
-
+        /* PROFILE GET */
+        if let Some(args) = args.subcommand_matches("get") {
+            commands::profile_get(global_args, args);
+        }
         /* PROFILE LIST */
         if let Some(args) = args.subcommand_matches("list") {
             commands::profile_list(global_args, args);
@@ -51,7 +52,6 @@ fn main() -> io::Result<()> {
         if let Some(args) = args.subcommand_matches("new") {
             commands::key_new(global_args, args);
         }
-
         /* KEY GET */
         if let Some(args) = args.subcommand_matches("get") {
             commands::key_get(global_args, args);

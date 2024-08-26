@@ -2,7 +2,7 @@ use std::{collections::VecDeque, path::PathBuf};
 use std::ffi::OsStr;
 use clap::ArgMatches;
 use crate::cli::{path, prompts};
-use crate::{create_profile, delete_profile, Error, get_key, get_profiles, log_warn, options, select_profile};
+use crate::{create_profile, delete_profile, Error, get_key, get_profile, get_profiles, log_warn, options, select_profile};
 use crate::{decrypt, encrypt, log_error, log_success, new_key};
 
 pub fn r#box(g_args: &ArgMatches, args: &ArgMatches) -> (u32, u32) {
@@ -158,12 +158,12 @@ pub fn profile_create(g_args: &ArgMatches, args: &ArgMatches) {
 }
 
 pub fn profile_delete(g_args: &ArgMatches, args: &ArgMatches) {
+    let name = args.get_one::<String>("NAME").expect("Profile name is required");
+
     let password = match g_args.get_one::<String>("PASSWORD") {
-        None => prompts::prompt_password("Please enter the password for the target profile"),
+        None => prompts::prompt_password(&format!("Please enter the password for {}", name)),
         Some(password) => password.to_string()
     };
-
-    let name = args.get_one::<String>("NAME").expect("Profile name is required");
 
     if let Err(err) = delete_profile(&password, name) {
         match err {
@@ -188,12 +188,12 @@ pub fn profile_delete(g_args: &ArgMatches, args: &ArgMatches) {
 }
 
 pub fn profile_set(g_args: &ArgMatches, args: &ArgMatches) {
+    let name = args.get_one::<String>("NAME").expect("Profile name is required");
+
     let password = match g_args.get_one::<String>("PASSWORD") {
-        None => prompts::prompt_password("Please enter the password for the target profile"),
+        None => prompts::prompt_password(&format!("Please enter the password for {}", name)),
         Some(password) => password.to_string()
     };
-
-    let name = args.get_one::<String>("NAME").expect("Profile name is required");
 
     if let Err(err) = select_profile(&password, name) {
         match err {
@@ -215,6 +215,24 @@ pub fn profile_set(g_args: &ArgMatches, args: &ArgMatches) {
     }
 
     log_success!("Successfully set profile to \"{}\"", name);
+}
+
+pub fn profile_get(_g_args: &ArgMatches, _args: &ArgMatches) {
+    let profile_name = get_profile();
+    if let Err(err) = profile_name {
+        match err {
+            Error::ProfileError(_) => {
+                log_error!("{}", err);
+                log_error!("New profile can be created with \"lockbox profile new\"");
+                std::process::exit(1);
+            },
+            _ => {
+                log_error!("Unable to list profiles: {}", err);
+                std::process::exit(1);
+            }
+        }
+    }
+    log_success!("Currently selected profile: {}", profile_name.unwrap());
 }
 
 pub fn profile_list(_g_args: &ArgMatches, _args: &ArgMatches) {

@@ -171,6 +171,13 @@ pub fn select_profile(password: &str, profile_name: &str) -> Result<()> {
     profiles::set_current_profile(profile_name)
 }
 
+pub fn get_profile() -> Result<String> {
+    log_info!("Getting current profile");
+
+    let profile = profiles::get_current_profile()?;
+    Ok(profile.name)
+}
+
 pub fn get_profiles() -> Result<Vec<String>> {
     log_info!("Listing all available profiles");
 
