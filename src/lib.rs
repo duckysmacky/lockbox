@@ -11,6 +11,7 @@ mod encryption;
 mod data;
 mod file;
 mod error;
+mod utils;
 
 pub type Key = [u8; 32];
 pub type Nonce = [u8; 12];
@@ -208,10 +209,20 @@ pub fn get_key(password: &str, opts: options::GetKeyOptions) -> Result<String> {
     log_info!("Retrieving the encryption key from the current profile");
     let key = keys::get_key()?;
     if !opts.byte_format {
-        return match std::str::from_utf8(&key) {
-            Ok(str_key) => Ok(str_key.to_string()),
-            Err(_) => Err(Error::InvalidData("Unable to convert encryption key into a UTF-8 string format".to_string())),
-        };
+        return Ok(utils::hex::key_to_hex_string(key));
     }
     Ok(format!("{:?}", key))
+}
+
+pub fn set_key(password: &str, new_key: &str) -> Result<String> {
+	let profile = profiles::get_current_profile()?;
+
+    if !auth::verify_password(password, profile) {
+        return Err(Error::AuthError("Invalid password entered".to_string()))
+    }
+
+    log_info!("Setting the encryption key from the current profile");
+	keys::set_key(utils::hex::hex_string_to_key(new_key.to_string())?)?;
+
+	Ok(new_key.to_string())
 }

@@ -3,7 +3,7 @@ use std::ffi::OsStr;
 use clap::ArgMatches;
 use crate::cli::{path, prompts};
 use crate::{create_profile, delete_profile, Error, get_key, get_profile, get_profiles, log_warn, options, select_profile};
-use crate::{decrypt, encrypt, log_error, log_success, new_key};
+use crate::{decrypt, encrypt, log_error, log_success, new_key, set_key};
 
 pub fn r#box(g_args: &ArgMatches, args: &ArgMatches) -> (u32, u32) {
     let mut total_files: u32 = 0;
@@ -326,6 +326,42 @@ pub fn key_get(g_args: &ArgMatches, args: &ArgMatches) {
 
     // TODO: add current profile name
     log_success!("Encryption key for the current profile:\n    {}", key.unwrap());
+}
+
+pub fn key_set(g_args: &ArgMatches, args: &ArgMatches) {
+	let password = match g_args.get_one::<String>("PASSWORD") {
+        None => prompts::prompt_password("Please enter the password for the current profile:"),
+        Some(password) => password.to_string()
+    };
+
+	let new_key = args.get_one::<String>("NEW_KEY").expect("New key is required");
+
+    let key = set_key(&password, &new_key);
+    if let Err(err) = &key {
+        match err {
+            Error::ProfileError(_) => {
+                log_error!("{}", err);
+                log_error!("New profile can be created with \"lockbox profile new\"");
+                std::process::exit(1);
+            },
+            Error::AuthError(_) => {
+                log_error!("{}", err);
+                log_error!("Please try again");
+                std::process::exit(1);
+            },
+			Error::InvalidInput(_) => {
+				log_error!("{}", err);
+                log_error!("Please try again");
+                std::process::exit(1);
+			},
+            _ => {
+                log_error!("Unable to get key: {}", err);
+                std::process::exit(1);
+            }
+        }
+    }
+
+    log_success!("New encryption key for the current profile:\n    {}", key.unwrap());
 }
 
 fn get_path_vec(args: &ArgMatches, arg_id: &str) -> Option<Vec<PathBuf>> {

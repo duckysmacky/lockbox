@@ -56,6 +56,10 @@ fn main() -> io::Result<()> {
         if let Some(args) = args.subcommand_matches("get") {
             commands::key_get(global_args, args);
         }
+		/* KEY SET */
+		if let Some(args) = args.subcommand_matches("set") {
+            commands::key_set(global_args, args);
+        }
     }
 
     let duration = start_time.elapsed();
