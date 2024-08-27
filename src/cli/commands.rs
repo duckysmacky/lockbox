@@ -1,5 +1,6 @@
 use std::{collections::VecDeque, path::PathBuf};
 use std::ffi::OsStr;
+use std::process::exit;
 use clap::ArgMatches;
 use crate::cli::{path, prompts};
 use crate::{create_profile, delete_profile, Error, get_key, get_profile, get_profiles, log_warn, options, select_profile};
@@ -43,12 +44,12 @@ pub fn r#box(g_args: &ArgMatches, args: &ArgMatches) -> (u32, u32) {
                 Error::ProfileError(_) => {
                     log_error!("{}", err);
                     log_error!("New profile can be created with \"lockbox profile new\"");
-                    std::process::exit(1);
+                    exit(1);
                 },
                 Error::AuthError(_) => {
                     log_error!("{}", err);
                     log_error!("Please try again");
-                    std::process::exit(1);
+                    exit(1);
                 },
                 Error::IOError(_) => {
                     log_error!("Unable to access {:?}: {}", file_name, err);
@@ -110,12 +111,12 @@ pub fn unbox(g_args: &ArgMatches, args: &ArgMatches) -> (u32, u32) {
                 Error::ProfileError(_) => {
                     log_error!("{}", err);
                     log_error!("New profile can be created with \"lockbox profile new\"");
-                    std::process::exit(1);
+                    exit(1);
                 },
                 Error::AuthError(_) => {
                     log_error!("{}", err);
                     log_error!("Please try again");
-                    std::process::exit(1);
+                    exit(1);
                 },
                 Error::IOError(_) => {
                     log_error!("Unable to access {:?}: {}", file_name, err);
@@ -151,10 +152,10 @@ pub fn profile_create(g_args: &ArgMatches, args: &ArgMatches) {
 
     if let Err(err) = create_profile(&password, name) {
         log_error!("Unable to create a new profile: {}", err);
-        std::process::exit(1);
+        exit(1);
+    } else {
+        log_success!("Successfully created new profile \"{}\"", name);
     }
-
-    log_success!("Successfully created new profile \"{}\"", name);
 }
 
 pub fn profile_delete(g_args: &ArgMatches, args: &ArgMatches) {
@@ -170,21 +171,21 @@ pub fn profile_delete(g_args: &ArgMatches, args: &ArgMatches) {
             Error::ProfileError(_) => {
                 log_error!("{}", err);
                 log_error!("New profile can be created with \"lockbox profile new\"");
-                std::process::exit(1);
+                exit(1);
             },
             Error::AuthError(_) => {
                 log_error!("{}", err);
                 log_error!("Please try again");
-                std::process::exit(1);
+                exit(1);
             },
             _ => {
                 log_error!("Unable to delete the profile: {}", err);
-                std::process::exit(1);
+                exit(1);
             }
         }
+    } else {
+        log_success!("Successfully deleted profile \"{}\"", name);
     }
-
-    log_success!("Successfully deleted profile \"{}\"", name);
 }
 
 pub fn profile_set(g_args: &ArgMatches, args: &ArgMatches) {
@@ -200,21 +201,24 @@ pub fn profile_set(g_args: &ArgMatches, args: &ArgMatches) {
             Error::ProfileError(_) => {
                 log_error!("{}", err);
                 log_error!("New profile can be created with \"lockbox profile new\"");
-                std::process::exit(1);
+                exit(1);
             },
             Error::AuthError(_) => {
                 log_error!("{}", err);
                 log_error!("Please try again");
-                std::process::exit(1);
+                exit(1);
             },
+            Error::InvalidInput(_) => {
+                log_success!("Profile is already set to \"{}\"", name);
+            }
             _ => {
                 log_error!("Unable to set the profile: {}", err);
-                std::process::exit(1);
+                exit(1);
             }
         }
+    } else {
+        log_success!("Successfully set profile to \"{}\"", name);
     }
-
-    log_success!("Successfully set profile to \"{}\"", name);
 }
 
 pub fn profile_get(_g_args: &ArgMatches, _args: &ArgMatches) {
@@ -224,15 +228,16 @@ pub fn profile_get(_g_args: &ArgMatches, _args: &ArgMatches) {
             Error::ProfileError(_) => {
                 log_error!("{}", err);
                 log_error!("New profile can be created with \"lockbox profile new\"");
-                std::process::exit(1);
+                exit(1);
             },
             _ => {
                 log_error!("Unable to list profiles: {}", err);
-                std::process::exit(1);
+                exit(1);
             }
         }
+    } else {
+        log_success!("Currently selected profile: {}", profile_name.unwrap());
     }
-    log_success!("Currently selected profile: {}", profile_name.unwrap());
 }
 
 pub fn profile_list(_g_args: &ArgMatches, _args: &ArgMatches) {
@@ -242,11 +247,11 @@ pub fn profile_list(_g_args: &ArgMatches, _args: &ArgMatches) {
             Error::ProfileError(_) => {
                 log_error!("{}", err);
                 log_error!("New profile can be created with \"lockbox profile new\"");
-                std::process::exit(1);
+                exit(1);
             },
             _ => {
                 log_error!("Unable to list profiles: {}", err);
-                std::process::exit(1);
+                exit(1);
             }
         }
     }
@@ -277,21 +282,21 @@ pub fn key_new(g_args: &ArgMatches, _args: &ArgMatches) {
             Error::ProfileError(_) => {
                 log_error!("{}", err);
                 log_error!("New profile can be created with \"lockbox profile new\"");
-                std::process::exit(1);
+                exit(1);
             },
             Error::AuthError(_) => {
                 log_error!("{}", err);
                 log_error!("Please try again");
-                std::process::exit(1);
+                exit(1);
             },
             _ => {
                 log_error!("Unable to generate new encryption key: {}", err);
-                std::process::exit(1);
+                exit(1);
             }
         }
+    } else {
+        log_success!("Successfully generated new encryption key for the current profile");
     }
-
-    log_success!("Successfully generated new encryption key for the current profile");
 }
 
 pub fn key_get(g_args: &ArgMatches, args: &ArgMatches) {
@@ -310,22 +315,22 @@ pub fn key_get(g_args: &ArgMatches, args: &ArgMatches) {
             Error::ProfileError(_) => {
                 log_error!("{}", err);
                 log_error!("New profile can be created with \"lockbox profile new\"");
-                std::process::exit(1);
+                exit(1);
             },
             Error::AuthError(_) => {
                 log_error!("{}", err);
                 log_error!("Please try again");
-                std::process::exit(1);
+                exit(1);
             },
             _ => {
                 log_error!("Unable to get the key: {}", err);
-                std::process::exit(1);
+                exit(1);
             }
         }
+    } else {
+        // TODO: add current profile name
+        log_success!("Encryption key for the current profile:\n    {}", key.unwrap());
     }
-
-    // TODO: add current profile name
-    log_success!("Encryption key for the current profile:\n    {}", key.unwrap());
 }
 
 pub fn key_set(g_args: &ArgMatches, args: &ArgMatches) {
@@ -342,25 +347,25 @@ pub fn key_set(g_args: &ArgMatches, args: &ArgMatches) {
             Error::ProfileError(_) => {
                 log_error!("{}", err);
                 log_error!("New profile can be created with \"lockbox profile new\"");
-                std::process::exit(1);
+                exit(1);
             },
             Error::AuthError(_) => {
                 log_error!("{}", err);
                 log_error!("Please try again");
-                std::process::exit(1);
+                exit(1);
             },
 			Error::InvalidInput(_) => {
 				log_error!("Invalid key provided: {}", err);
-                std::process::exit(1);
+                exit(1);
 			},
             _ => {
                 log_error!("Unable to set a new key: {}", err);
-                std::process::exit(1);
+                exit(1);
             }
         }
+    } else {
+        log_success!("Successfully set a new encryption key for the current profile");
     }
-
-    log_success!("Successfully set a new encryption key for the current profile");
 }
 
 fn get_path_vec(args: &ArgMatches, arg_id: &str) -> Option<Vec<PathBuf>> {
