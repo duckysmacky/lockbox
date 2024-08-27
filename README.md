@@ -1,5 +1,9 @@
 # LockBox
 
+![windows](https://github.com/duckysmacky/lockbox/actions/workflows/windows.yml/badge.svg)
+![linux](https://github.com/duckysmacky/lockbox/actions/workflows/linux.yml/badge.svg)
+![macos](https://github.com/duckysmacky/lockbox/actions/workflows/macos.yml/badge.svg)
+
 A data encryption program, which focuses on speed, safety and user-friendliness
 
 *The project is still very work-in-progress and the mentioned features could very well change during development*
