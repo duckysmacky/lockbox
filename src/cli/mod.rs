@@ -141,9 +141,9 @@ pub fn get_command() -> Command {
         .subcommand(Command::new("profile")
             .about("Control custom profiles")
             /* CREATE PROFILE SUBCOMMAND */
-            .subcommand(Command::new("create")
+            .subcommand(Command::new("new")
                 .about("Create a new profile")
-                .aliases(["new", "add"])
+                .aliases(["create", "add"])
                 .arg(Arg::new("NAME")
                     .help("A unique name for the profile")
                     .required(true)

@@ -13,6 +13,9 @@ fn main() -> io::Result<()> {
         let (total, error) = commands::r#box(global_args, args);
 
         log_success!("[{}/{}] files encrypted", total - error, total);
+        if total == error {
+            std::process::exit(1);
+        }
     }
 
     /* UNBOX */
@@ -20,12 +23,15 @@ fn main() -> io::Result<()> {
         let (total, error) = commands::unbox(global_args, args);
 
         log_success!("[{}/{}] files decrypted", total - error, total);
+        if total == error {
+            std::process::exit(1);
+        }
     }
 
     /* PROFILE */
     if let Some(args) = global_args.subcommand_matches("profile") {
         /* PROFILE CREATE */
-        if let Some(args) = args.subcommand_matches("create") {
+        if let Some(args) = args.subcommand_matches("new") {
             commands::profile_create(global_args, args);
         }
         /* PROFILE DELETE */

@@ -112,14 +112,22 @@ pub fn save_profile(updated_profile: Profile) -> io::Result<()> {
 
     let mut profiles_data = get_profiles_file()?;
     let profile_name = updated_profile.name.clone();
-    for (i, profile) in profiles_data.profiles.iter().enumerate() {
-        if profile.name == profile_name {
-            profiles_data.profiles.insert(i, updated_profile);
-            break;
-        }
-        if i == profiles_data.profiles.len() {
+
+    if profiles_data.profiles.is_empty() {
+        if profiles_data.profiles.is_empty() {
             profiles_data.profiles.push(updated_profile);
-            break;
+            profiles_data.current_profile = Some(profile_name);
+        }
+    } else {
+        for (i, profile) in profiles_data.profiles.iter().enumerate() {
+            if i == profiles_data.profiles.len() - 1 {
+                profiles_data.profiles.push(updated_profile);
+                break;
+            }
+            if profile.name == profile_name {
+                profiles_data.profiles.insert(i, updated_profile);
+                break;
+            }
         }
     }
 
