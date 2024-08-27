@@ -98,6 +98,8 @@ pub fn decrypt(password: &str, input_path: &Path, opts: &mut options::Decryption
         if extension != "box" {
             return Err(Error::InvalidInput("This file is not encrypted".to_string()))
         }
+    } else {
+        return Err(Error::InvalidInput("This file is not encrypted".to_string()))
     }
 
     let mut path_buffer = PathBuf::from(input_path);
