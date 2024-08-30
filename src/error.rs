@@ -1,3 +1,5 @@
+//! Custom error types used within all the core functions
+
 use std::{fmt, io};
 
 pub type Result<T> = std::result::Result<T, Error>;

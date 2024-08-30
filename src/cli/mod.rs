@@ -1,3 +1,5 @@
+//! Contains everything related to the CLI wrapper around the api
+
 pub mod commands;
 pub mod logger;
 pub mod path;

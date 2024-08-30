@@ -1,3 +1,5 @@
+//! Contains functions for the custom file format parsing and general IO operations
+
 use std::ffi::OsString;
 use serde::{Deserialize, Serialize};
 use crate::Checksum;
