@@ -1,6 +1,7 @@
-use crate::{Error, Key, log_debug, Result};
-use crate::data::profiles;
-use crate::encryption::cipher::{self};
+use crate::{Error, Result, Key};
+use crate::log_debug;
+use crate::core::encryption::cipher;
+use super::profiles;
 
 pub fn get_key() -> Result<Key> {
     log_debug!("Getting encryption key from current profile");

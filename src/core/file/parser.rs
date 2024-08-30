@@ -2,8 +2,8 @@ use std::fs::File;
 use std::fs;
 use std::io::{Read, Write};
 use std::path::Path;
-use crate::file::{BoxFile, BoxHeader};
 use crate::{Result, Error};
+use super::{BoxFile, BoxHeader};
 
 pub fn parse_file(path: &Path) -> Result<BoxFile> {
     let mut file = File::open(path)?;

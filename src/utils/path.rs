@@ -1,6 +1,6 @@
 use std::{fs, io, path::{Path, PathBuf}, ffi::OsString};
 
-use crate::file::parser;
+use crate::parser;
 use crate::{log_error, log_info};
 
 pub struct PathOptions {

@@ -1,7 +1,7 @@
 use std::{ffi::OsString, fs, path::Path};
-use crate::encryption::checksum;
-use crate::file::BoxHeader;
+use crate::core::encryption::checksum;
 use crate::{Nonce, Result};
+use super::BoxHeader;
 
 pub fn generate_header(path: &Path, data: &[u8], nonce: &Nonce) -> Result<BoxHeader> {
     let file_data = fs::metadata(path)?;
