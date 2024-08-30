@@ -5,10 +5,10 @@
 //! encryption, decryption, key and profile management.
 
 pub use core::error::{Error, Result};
-pub use core::file::parser; // TODO: find a way to use the parser in utils without re-importing it
+pub use core::utils;
+// TODO: find a way to use the parser in utils without re-importing it
 
 pub mod cli;
-pub mod utils;
 mod core;
 
 /// Type representing a basic 32-byte encryption key

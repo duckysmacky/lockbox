@@ -1,8 +1,6 @@
-use std::{
-    fs::{self, File},
-    io::{Read, Result, Write},
-    path::Path
-};
+use std::path::Path;
+use std::fs::{self, File};
+use std::io::{Read, Result, Write};
 
 pub fn read_bytes(path: &Path) -> Result<Vec<u8>> {
     let mut file = File::open(path)?;

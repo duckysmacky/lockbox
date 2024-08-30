@@ -1,15 +1,17 @@
 //! Contains everything which has to do with the encryption and decryption processes
 
-use std::path::{Path, PathBuf};
 use std::fs;
-use crate::{Error, options, parser, log_debug};
+use std::path::{Path, PathBuf};
+use crate::{Error, Result};
+use crate::options;
+use crate::log_debug;
 use super::data::{auth, keys, profiles};
-use super::file::{header, io};
+use super::file::{header, io, parser};
 
 pub mod cipher;
 pub mod checksum;
 
-pub fn encrypt(password: &str, input_path: &Path, opts: &mut options::EncryptionOptions) -> crate::Result<()> {
+pub fn encrypt(password: &str, input_path: &Path, opts: &mut options::EncryptionOptions) -> Result<()> {
     let profile = profiles::get_current_profile()?;
 
     if !auth::verify_password(password, profile) {
@@ -57,7 +59,7 @@ pub fn encrypt(password: &str, input_path: &Path, opts: &mut options::Encryption
     Ok(())
 }
 
-pub fn decrypt(password: &str, input_path: &Path, opts: &mut options::DecryptionOptions) -> crate::Result<()> {
+pub fn decrypt(password: &str, input_path: &Path, opts: &mut options::DecryptionOptions) -> Result<()> {
     let profile = profiles::get_current_profile()?;
 
     if !auth::verify_password(password, profile) {

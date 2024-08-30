@@ -1,5 +1,4 @@
-use crate::Key;
-use crate::{Result, Error};
+use crate::{Result, Error, Key};
 
 /// transforms Key type into hex string
 /// (e.g. \[1, 40, 174, 16, 5, ...\] into "0128AE1005...")

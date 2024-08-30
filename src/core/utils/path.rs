@@ -1,18 +1,15 @@
-use std::{fs, io, path::{Path, PathBuf}, ffi::OsString};
+use std::{fs, io, ffi::OsString};
+use std::path::{Path, PathBuf};
+use crate::core::file::parser;
+use crate::{log_info, log_warn};
 
-use crate::parser;
-use crate::{log_error, log_info};
+pub fn parse_paths(input_paths: Vec<PathBuf>, recursive: bool) -> Vec<PathBuf> {
+    let mut file_paths: Vec<PathBuf> = Vec::new();
 
-pub struct PathOptions {
-    pub input_paths: Vec<PathBuf>,
-    pub recursive: bool
-}
-
-pub fn parse_paths(file_paths: &mut Vec<PathBuf>, opts: PathOptions) {
-    for path in opts.input_paths {
+    for path in input_paths {
         if path.is_dir() {
-            if let Err(err) = read_dir(&path, file_paths, opts.recursive) {
-                log_error!("Unable to read directory \"{}\": {}", path.display(), err);
+            if let Err(err) = read_dir(&path, &mut file_paths, recursive) {
+                log_warn!("Unable to read directory \"{}\": {}", path.display(), err);
                 continue;
             }
         } else if path.is_file() {
@@ -23,12 +20,13 @@ pub fn parse_paths(file_paths: &mut Vec<PathBuf>, opts: PathOptions) {
             match search_for_original(path.parent().unwrap(), target_name) {
                 Ok(box_path) => file_paths.push(box_path),
                 Err(err) => {
-                    log_error!("Unable to find \"{}\": {}", path.display(), err);
+                    log_warn!("Unable to find \"{}\": {}", path.display(), err);
                     continue;
                 }
             }
         }
     }
+    file_paths
 }
 
 fn read_dir(dir_path: &Path, file_paths: &mut Vec<PathBuf>, recursive: bool) -> io::Result<()> {

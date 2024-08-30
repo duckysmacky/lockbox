@@ -5,19 +5,18 @@ use clap::ArgMatches;
 use crate::cli::prompts;
 use crate::{create_profile, decrypt, delete_profile, encrypt, Error, get_key, get_profile, get_profiles, log_warn, options, select_profile};
 use crate::{log_error, log_success, new_key, set_key};
-use crate::utils::path;
+use crate::core::utils::path;
 
 pub fn r#box(g_args: &ArgMatches, args: &ArgMatches) -> (u32, u32) {
     let mut total_files: u32 = 0;
     let mut error_files: u32 = 0;
-    let mut file_paths: Vec<PathBuf> = Vec::new();
 
-    // options for path parsing
-    let options = path::PathOptions {
-        input_paths: get_path_vec(args, "PATH").expect("File path is required"),
-        recursive: args.get_flag("RECURSIVE-SEARCH")
+    let file_paths: Vec<PathBuf> = {
+        let input_paths = get_path_vec(args, "PATH").expect("File path is required");
+        let recursive = args.get_flag("RECURSIVE-SEARCH");
+
+        path::parse_paths(input_paths, recursive)
     };
-    path::parse_paths(&mut file_paths, options);
 
     // options for encryption
     let mut options = options::EncryptionOptions {
@@ -79,14 +78,13 @@ pub fn r#box(g_args: &ArgMatches, args: &ArgMatches) -> (u32, u32) {
 pub fn unbox(g_args: &ArgMatches, args: &ArgMatches) -> (u32, u32) {
     let mut total_files: u32 = 0;
     let mut error_files: u32 = 0;
-    let mut file_paths: Vec<PathBuf> = Vec::new();
 
-    // options for path parsing
-    let options = path::PathOptions {
-        input_paths: get_path_vec(args, "PATH").expect("File path is required"),
-        recursive: args.get_flag("RECURSIVE-SEARCH")
+    let file_paths: Vec<PathBuf> = {
+        let input_paths = get_path_vec(args, "PATH").expect("File path is required");
+        let recursive = args.get_flag("RECURSIVE-SEARCH");
+
+        path::parse_paths(input_paths, recursive)
     };
-    path::parse_paths(&mut file_paths, options);
 
     // options for decryption
     let mut options = options::DecryptionOptions {
