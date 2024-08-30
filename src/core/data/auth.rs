@@ -1,7 +1,7 @@
 use argon2::{self, Config};
 use rand::random;
-use super::Profile;
 use crate::{Result, Error};
+use super::Profile;
 
 pub fn hash_password(password: &str) -> Result<(String, [u8; 16])> {
     let salt: [u8; 16] = random();

@@ -1,7 +1,7 @@
 use std::io::{self, BufReader, Write};
 use std::fs::File;
 use crate::core::encryption::cipher;
-use crate::{Error, log_debug, Result};
+use crate::{Error, Result, log_debug};
 use super::{auth, get_data_dir, Profile, ProfilesData};
 
 const PROFILES_FILE_PATH: &str = "profiles.json";

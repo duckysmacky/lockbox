@@ -1,8 +1,5 @@
-use std::{
-    sync::{Arc, Mutex},
-    string::String, cmp::PartialEq,
-    fmt
-};
+use std::{fmt, string::String, cmp::PartialEq};
+use std::sync::{Arc, Mutex};
 
 use clap::ArgMatches;
 use lazy_static::lazy_static;

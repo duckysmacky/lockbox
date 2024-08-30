@@ -2,8 +2,7 @@
 
 use std::ffi::OsString;
 use serde::{Deserialize, Serialize};
-use crate::Checksum;
-use crate::Nonce;
+use crate::{Nonce, Checksum};
 
 pub mod io;
 pub mod parser;

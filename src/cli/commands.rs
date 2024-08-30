@@ -1,11 +1,9 @@
-use std::{collections::VecDeque, path::PathBuf};
-use std::ffi::OsStr;
+use std::{collections::VecDeque, path::PathBuf, ffi::OsStr};
 use std::process::exit;
 use clap::ArgMatches;
-use crate::cli::prompts;
-use crate::{create_profile, decrypt, delete_profile, encrypt, Error, get_key, get_profile, get_profiles, log_warn, options, select_profile};
-use crate::{log_error, log_success, new_key, set_key};
 use crate::core::utils::path;
+use crate::{Error, options, log_error, log_success, log_warn};
+use super::prompts;
 
 pub fn r#box(g_args: &ArgMatches, args: &ArgMatches) -> (u32, u32) {
     let mut total_files: u32 = 0;
