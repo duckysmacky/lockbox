@@ -1,3 +1,5 @@
+pub mod commands;
+
 use std::{env, fs};
 use std::path::{Path, PathBuf};
 
@@ -45,7 +47,7 @@ fn _get_data_dir() -> PathBuf {
         path.push("Application Support");
         path.push("Lockbox");
         path
-    } else { // Assuming Linux or other Unix-like OS
+    } else {
         let mut path = PathBuf::from(env::var("HOME").expect("Could not retrieve HOME environment variable"));
         path.push(".local");
         path.push("share");

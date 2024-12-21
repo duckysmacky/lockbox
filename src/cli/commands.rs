@@ -37,7 +37,7 @@ pub fn r#box(g_args: &ArgMatches, args: &ArgMatches) -> (u32, u32) {
 
         log_success!("Encrypting {:?}", file_name);
 
-        if let Err(err) = encrypt(&password, path.as_path(), &mut options) {
+        if let Err(err) = crate::encrypt(&password, path.as_path(), &mut options) {
             match err {
                 Error::ProfileError(_) => {
                     log_error!("{}", err);
@@ -103,7 +103,7 @@ pub fn unbox(g_args: &ArgMatches, args: &ArgMatches) -> (u32, u32) {
         };
         log_success!("Decrypting {:?}", file_name);
 
-        if let Err(err) = decrypt(&password, path.as_path(), &mut options) {
+        if let Err(err) = crate::decrypt(&password, path.as_path(), &mut options) {
             match err {
                 Error::ProfileError(_) => {
                     log_error!("{}", err);
@@ -147,7 +147,7 @@ pub fn profile_create(g_args: &ArgMatches, args: &ArgMatches) {
 
     let name = args.get_one::<String>("NAME").expect("Profile name is required");
 
-    if let Err(err) = create_profile(&password, name) {
+    if let Err(err) = crate::create_profile(&password, name) {
         log_error!("Unable to create a new profile: {}", err);
         exit(1);
     } else {
@@ -163,7 +163,7 @@ pub fn profile_delete(g_args: &ArgMatches, args: &ArgMatches) {
         Some(password) => password.to_string()
     };
 
-    if let Err(err) = delete_profile(&password, name) {
+    if let Err(err) = crate::delete_profile(&password, name) {
         match err {
             Error::ProfileError(_) => {
                 log_error!("{}", err);
@@ -193,7 +193,7 @@ pub fn profile_set(g_args: &ArgMatches, args: &ArgMatches) {
         Some(password) => password.to_string()
     };
 
-    if let Err(err) = select_profile(&password, name) {
+    if let Err(err) = crate::select_profile(&password, name) {
         match err {
             Error::ProfileError(_) => {
                 log_error!("{}", err);
@@ -219,7 +219,7 @@ pub fn profile_set(g_args: &ArgMatches, args: &ArgMatches) {
 }
 
 pub fn profile_get(_g_args: &ArgMatches, _args: &ArgMatches) {
-    let profile_name = get_profile();
+    let profile_name = crate::get_profile();
     if let Err(err) = profile_name {
         match err {
             Error::ProfileError(_) => {
@@ -238,7 +238,7 @@ pub fn profile_get(_g_args: &ArgMatches, _args: &ArgMatches) {
 }
 
 pub fn profile_list(_g_args: &ArgMatches, _args: &ArgMatches) {
-    let profiles = get_profiles();
+    let profiles = crate::get_profiles();
     if let Err(err) = profiles {
         match err {
             Error::ProfileError(_) => {
@@ -274,7 +274,7 @@ pub fn key_new(g_args: &ArgMatches, _args: &ArgMatches) {
         Some(password) => password.to_string()
     };
 
-    if let Err(err) = new_key(&password) {
+    if let Err(err) = crate::new_key(&password) {
         match err {
             Error::ProfileError(_) => {
                 log_error!("{}", err);
@@ -306,7 +306,7 @@ pub fn key_get(g_args: &ArgMatches, args: &ArgMatches) {
         byte_format: args.get_flag("BYTE-FORMAT"),
     };
 
-    let key = get_key(&password, options);
+    let key = crate::get_key(&password, options);
     if let Err(err) = &key {
         match err {
             Error::ProfileError(_) => {
@@ -338,7 +338,7 @@ pub fn key_set(g_args: &ArgMatches, args: &ArgMatches) {
 
 	let new_key = args.get_one::<String>("KEY").expect("Key is required");
 
-    let key = set_key(&password, &new_key);
+    let key = crate::set_key(&password, &new_key);
     if let Err(err) = &key {
         match err {
             Error::ProfileError(_) => {
