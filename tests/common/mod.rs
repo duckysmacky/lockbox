@@ -1,36 +1,43 @@
-//! Contains common functions and constatants for running tests.
+//! Contains common functions and constants for running tests.
 
 pub mod commands;
 
 use std::{env, fs, io};
 use std::path::{Path, PathBuf};
 
-pub const PASSWORD: &str = "test1234"; // just a password for testing
+pub const PROFILE_NAME: &str = "test-profile";
+pub const PASSWORD: &str = "test-password";
 pub const ORIGINAL_DIR: &str = "files/original";
 pub const TEST_DIR: &str = "files/test";
 
 /// Global test environment setup (must be run before each test)
 pub fn setup() {
-    if let Err(err) = copy_original() {
-        panic!("Unable to copy original test files: {}", err)
-    }
+    lockbox::create_profile(PASSWORD, PROFILE_NAME)
+        .unwrap_or_else(|err| panic!("Unable to create test profile: {}", err));
+
+    lockbox::select_profile(PASSWORD, PROFILE_NAME)
+        .unwrap_or_else(|err| panic!("Unable to select test profile: {}", err));
+
+    copy_original_files()
+        .unwrap_or_else(|err| panic!("Unable to copy original test files: {}", err));
 }
 
 /// Global test environment cleanup (must be run after each test)
 pub fn cleanup() {
-    if let Err(err) = copy_original() {
-        panic!("Unable to copy original test files: {}", err)
-    }
+    lockbox::delete_profile(PASSWORD, PROFILE_NAME)
+        .unwrap_or_else(|err| panic!("Unable to delete test profile: {}", err));
+
+    delete_test_files()
+        .unwrap_or_else(|err| panic!("Unable to delete test files: {}", err));
 }
 
 /// Copies original test files for use in tests
-fn copy_original() -> io::Result<()> {
+fn copy_original_files() -> io::Result<()> {
     let test_dir = Path::new(TEST_DIR);
 
-    if test_dir.exists() {
-        fs::remove_dir_all(test_dir)?;
+    if !test_dir.exists() {
+        fs::create_dir(test_dir)?;
     }
-    fs::create_dir(test_dir)?;
 
     for entry in fs::read_dir(ORIGINAL_DIR)? {
         let original_file = entry?.path();
@@ -46,27 +53,13 @@ fn copy_original() -> io::Result<()> {
     Ok(())
 }
 
-fn _get_data_dir() -> PathBuf {
-    let path = if cfg!(target_os = "windows") {
-        let mut path = PathBuf::from(env::var("APPDATA").expect("Could not retrieve APPDATA environment variable"));
-        path.push("Lockbox");
-        path.push("Data");
-        path
-    } else if cfg!(target_os = "macos") {
-        let mut path = PathBuf::from(env::var("HOME").expect("Could not retrieve HOME environment variable"));
-        path.push("Library");
-        path.push("Application Support");
-        path.push("Lockbox");
-        path
-    } else {
-        let mut path = PathBuf::from(env::var("HOME").expect("Could not retrieve HOME environment variable"));
-        path.push(".local");
-        path.push("share");
-        path.push("lockbox");
-        path
-    };
-    if !path.exists() {
-        fs::create_dir_all(&path).expect("Failed to create lockbox data directory");
+/// Deletes and cleans up test files
+fn delete_test_files() -> io::Result<()> {
+    let test_dir = Path::new(TEST_DIR);
+
+    if test_dir.exists() {
+        fs::remove_dir_all(test_dir)?;
     }
-    path
+
+    Ok(())
 }

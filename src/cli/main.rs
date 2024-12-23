@@ -1,7 +1,7 @@
 //! CLI entry point
 
 use std::{io, time::Instant};
-use lockbox::{cli, log_success};
+use lockbox::{cli, log_success, log_info};
 
 fn main() -> io::Result<()> {
     let start_time = Instant::now();
@@ -70,6 +70,6 @@ fn main() -> io::Result<()> {
     }
 
     let duration = start_time.elapsed();
-    log_success!("Time taken: {:.2?}", duration);
+    log_info!("Time taken: {:.2?}", duration);
     Ok(())
 }

@@ -18,23 +18,11 @@ fn print_output(output: &Output) {
 /// Local test environment setup
 fn setup() {
     common::setup();
-
-    let output = commands::run_profile_new("test");
-    print_output(&output);
-    assert!(output.status.success(), "Profile creation failed");
-
-    let output = commands::run_profile_select("test");
-    print_output(&output);
-    assert!(output.status.success(), "Profile selection failed");
 }
 
 /// Local test environment cleanup
 fn cleanup() {
     common::cleanup();
-
-    let output = commands::run_profile_delete("test");
-    print_output(&output);
-    assert!(output.status.success(), "Profile deletion failed");
 }
 
 #[test]
@@ -46,11 +34,11 @@ fn test_text_encryption() {
 
     let output = commands::run_box(&test_file, &[]);
     print_output(&output);
-    assert!(output.status.success(), "Encryption failed");
+    assert!(output.status.success(), "Text encryption failed");
 
     let output = commands::run_unbox(&test_file, &[]);
     print_output(&output);
-    assert!(output.status.success(), "Decryption failed");
+    assert!(output.status.success(), "Text decryption failed");
 
     cleanup();
 }
@@ -64,11 +52,11 @@ fn test_image_encryption() {
 
     let output = commands::run_box(&test_file, &[]);
     print_output(&output);
-    assert!(output.status.success(), "Encryption failed");
+    assert!(output.status.success(), "Image encryption failed");
 
     let output = commands::run_unbox(&test_file, &[]);
     print_output(&output);
-    assert!(output.status.success(), "Decryption failed");
+    assert!(output.status.success(), "Image decryption failed");
 
     cleanup();
 }
