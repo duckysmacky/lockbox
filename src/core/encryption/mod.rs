@@ -11,6 +11,9 @@ use super::file::{header, io, parser};
 pub mod cipher;
 pub mod checksum;
 
+/// Encrypts the file at provided path using current profile's key. Password is required to verify
+/// and get access to current profile. Additional options can be supplied to change the encryption
+/// process
 pub fn encrypt(password: &str, input_path: &Path, opts: &mut options::EncryptionOptions) -> Result<()> {
     let profile = profiles::get_current_profile()?;
 
@@ -59,6 +62,9 @@ pub fn encrypt(password: &str, input_path: &Path, opts: &mut options::Encryption
     Ok(())
 }
 
+/// Decryption the file at provided path using current profile's key. Password is required to
+/// verify and get access to current profile. Additional options can be supplied to change the
+/// decryption process
 pub fn decrypt(password: &str, input_path: &Path, opts: &mut options::DecryptionOptions) -> Result<()> {
     let profile = profiles::get_current_profile()?;
 

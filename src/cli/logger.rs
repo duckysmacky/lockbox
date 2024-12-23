@@ -1,3 +1,5 @@
+//! Logging macros for CLI mode
+
 use std::{fmt, string::String, cmp::PartialEq};
 use std::sync::{Arc, Mutex};
 
@@ -5,11 +7,7 @@ use clap::ArgMatches;
 use lazy_static::lazy_static;
 
 lazy_static! {
-    pub static ref LOGGER: Arc<Mutex<Logger>> = Arc::new(
-        Mutex::new(
-            Logger::new()
-        )
-    );
+    pub static ref LOGGER: Arc<Mutex<Logger>> = Arc::new(Mutex::new(Logger::new()));
 }
 
 #[derive(PartialEq)]

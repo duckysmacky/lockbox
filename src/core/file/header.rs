@@ -1,8 +1,12 @@
+//! Contains functions related to manipulating header for the custom file format (.box)
+
 use std::{ffi::OsString, fs, path::Path};
 use crate::core::encryption::checksum;
 use crate::{Nonce, Result};
 use super::BoxHeader;
 
+/// Generates and returns a new header for the file at the provided path based on its data, as well
+/// as generates checksum for the provided data
 pub fn generate_header(path: &Path, data: &[u8], nonce: &Nonce) -> Result<BoxHeader> {
     let file_data = fs::metadata(path)?;
 

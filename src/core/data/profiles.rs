@@ -1,11 +1,16 @@
+//! Contains function for user profile manipulation
+
 use std::io::{self, BufReader, Write};
 use std::fs::File;
 use crate::core::encryption::cipher;
 use crate::{Error, Result, log_debug};
 use super::{auth, get_data_dir, Profile, ProfilesData};
 
+/// Name of the profile data file
 const PROFILES_FILE_PATH: &str = "profiles.json";
 
+/// Sets the current profile to profile which name was supplied. Returns an error if given profile
+/// doesn't exist
 pub fn set_current_profile(profile_name: &str) -> Result<()> {
     log_debug!("Setting current profile to \"{}\"", profile_name);
 
@@ -23,6 +28,7 @@ pub fn set_current_profile(profile_name: &str) -> Result<()> {
         .map_err(|err| Error::from(err))
 }
 
+/// Returns currently selected profile data
 pub fn get_current_profile() -> Result<Profile> {
     log_debug!("Getting current profile");
 
@@ -43,6 +49,7 @@ pub fn get_current_profile() -> Result<Profile> {
     Ok(profile)
 }
 
+/// Returns profile data for profile which name was supplied
 pub fn get_profile(profile_name: &str) -> Result<Profile> {
     log_debug!("Getting profile with name \"{}\"", profile_name);
 
@@ -54,6 +61,7 @@ pub fn get_profile(profile_name: &str) -> Result<Profile> {
     Err(Error::ProfileError(format!("Profile with name \"{}\" doesn\'t exist", profile_name)))
 }
 
+/// Returns a list of currently avaliable profiles
 pub fn get_profiles() -> Result<Vec<Profile>> {
     log_debug!("Getting all available profiles");
 
@@ -68,6 +76,7 @@ pub fn get_profiles() -> Result<Vec<Profile>> {
     Ok(profiles_data.unwrap().profiles)
 }
 
+/// Creates a new profile with provided name and password. Password is hashed automatically
 pub fn create_new_profile(name: &str, password: &str) -> Result<()> {
     log_debug!("Creating a new profile named \"{}\"", name);
 
@@ -86,6 +95,7 @@ pub fn create_new_profile(name: &str, password: &str) -> Result<()> {
         .map_err(|err| Error::IOError(format!("Unable to save profile data: {}", err)))
 }
 
+/// Deletes a profile with provided name
 pub fn delete_profile(profile_name: &str) -> Result<()> {
     log_debug!("Deleting profile with name \"{}\"", profile_name);
 
@@ -107,6 +117,8 @@ pub fn delete_profile(profile_name: &str) -> Result<()> {
     Err(Error::ProfileError(format!("Profile with name \"{}\" doesn\'t exist", profile_name)))
 }
 
+/// Saves provided profile data to profiles file. Updates existing profile or creates a new one, if
+/// doesn't already exist
 pub fn save_profile(updated_profile: Profile) -> io::Result<()> {
     log_debug!("Saving profile data: {:?}", &updated_profile);
 
@@ -134,6 +146,7 @@ pub fn save_profile(updated_profile: Profile) -> io::Result<()> {
     save_profiles_file(profiles_data)
 }
 
+/// Writes to profiles profile provided profiles data. Overwrites old data
 fn save_profiles_file(profiles_data: ProfilesData) -> io::Result<()> {
     log_debug!("Writing data to profiles file: {:?}", profiles_data);
 
@@ -153,6 +166,7 @@ fn save_profiles_file(profiles_data: ProfilesData) -> io::Result<()> {
     Ok(())
 }
 
+/// Reads and returns profiles data from file
 fn get_profiles_file() -> io::Result<ProfilesData> {
     log_debug!("Getting profiles file data");
 

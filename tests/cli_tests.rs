@@ -1,3 +1,5 @@
+//! Tests to test how the CLI client performs with different flags and inputs
+
 use std::path::PathBuf;
 use std::process::Output;
 use crate::common::{commands, TEST_DIR};
@@ -13,6 +15,7 @@ fn print_output(output: &Output) {
     )
 }
 
+/// Local test environment setup
 fn setup() {
     common::setup();
 
@@ -25,6 +28,7 @@ fn setup() {
     assert!(output.status.success(), "Profile selection failed");
 }
 
+/// Local test environment cleanup
 fn cleanup() {
     common::cleanup();
 

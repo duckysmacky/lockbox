@@ -9,7 +9,9 @@ pub mod parser;
 pub mod header;
 
 pub mod header_data {
+    /// Version of the file format being used for backwards compatibility
     pub const VERSION: u8 = 1;
+    /// Unique identifier for the file format
     pub const MAGIC: [u8; 4] = [b'B', b'O', b'X', VERSION];
 }
 
@@ -25,6 +27,7 @@ pub struct BoxHeader {
     pub nonce: Nonce
 }
 
+/// `.box` file format structure
 #[derive(Serialize, Deserialize, Debug)]
 pub struct BoxFile {
     pub header: BoxHeader,

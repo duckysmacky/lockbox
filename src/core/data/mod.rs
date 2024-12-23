@@ -8,12 +8,14 @@ use std::{path::PathBuf, env, fs};
 use serde::{Deserialize, Serialize};
 use crate::Key;
 
+/// JSON struct containing basic profile information
 #[derive(Serialize, Deserialize, Debug)]
 struct ProfilesData {
     pub current_profile: Option<String>,
     pub profiles: Vec<Profile>
 }
 
+/// JSON struct containing main information about a profile
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Profile {
     pub name: String,
@@ -21,6 +23,8 @@ pub struct Profile {
     pub password_hash: String,
 }
 
+/// Returns the application data directory based on the OS. Used for storing profiles and other
+/// information for program's functionality which is not meant to be edited by the user
 fn get_data_dir() -> PathBuf {
     let path = if cfg!(target_os = "windows") {
         let mut path = PathBuf::from(env::var("APPDATA").expect("Could not retrieve APPDATA environment variable"));
@@ -48,6 +52,8 @@ fn get_data_dir() -> PathBuf {
     path
 }
 
+/// Returns the application config directory based on the OS. Used for storing configuration files
+/// which can be edited by user to change program's functionality
 #[allow(dead_code)]
 fn get_config_dir() -> PathBuf {
     let path = if cfg!(target_os = "windows") {

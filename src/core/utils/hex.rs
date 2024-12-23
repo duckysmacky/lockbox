@@ -1,6 +1,8 @@
+//! Contains HEX manipulation functions for parsing custom types
+
 use crate::{Result, Error, Key};
 
-/// transforms Key type into hex string
+/// Transforms `Key` type into HEX string
 /// (e.g. \[1, 40, 174, 16, 5, ...\] into "0128AE1005...")
 pub fn key_to_hex_string(key: Key) -> String {
     let mut res: String = String::new();
@@ -8,10 +10,10 @@ pub fn key_to_hex_string(key: Key) -> String {
         if elem < 0x10 { res.push_str(&format!("0{:X}", elem)) }
         else { res.push_str(&format!("{:X}", elem)) }
     }
-    return res;
+    res
 }
 
-/// transforms hex string into Key type
+/// Transforms HEx string into `Key` type
 /// (e.g. "0128AE1005..." into \[1, 40, 174, 16, 5, ...\])
 pub fn hex_string_to_key(hex: String) -> Result<Key> {
     let mut res: Key = [0; 32];

@@ -2,15 +2,23 @@
 
 use std::{fmt, io};
 
+/// Custom error type which should be used throughout the codebase for consistency. Provided custom
+/// error types should cover most of the possible program errors
 pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum Error {
+    /// Error related to anything to do with user's profile or one's creation
     ProfileError(String),
+    /// Error related to accessing, reading or writing files
     IOError(String),
+    /// Error related to encryption, decryption, hashing and anything to do with cypher
     CipherError(String),
+    /// Error related to incorrect data being provided, read or failed parsing
     InvalidData(String),
+    /// Error related to user's provided input being invalid
     InvalidInput(String),
+    /// Error related to failing authentication (e.g. invalid password being provided)
     AuthError(String),
 }
 

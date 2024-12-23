@@ -1,4 +1,6 @@
 #![allow(dead_code)]
+//! Contains command templates for running CLI tests. The returned Output should be used to
+//! determine if the test was successful or not
 
 use std::process::{Command, Output};
 use std::path::PathBuf;

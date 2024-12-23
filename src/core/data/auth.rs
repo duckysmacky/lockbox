@@ -1,8 +1,11 @@
+//! Contains functions related to user authentication and password
+
 use argon2::{self, Config};
 use rand::random;
 use crate::{Result, Error};
 use super::Profile;
 
+/// Hashes the given password. Returns hashed password and salt
 pub fn hash_password(password: &str) -> Result<(String, [u8; 16])> {
     let salt: [u8; 16] = random();
     let config = Config::default();
@@ -11,6 +14,7 @@ pub fn hash_password(password: &str) -> Result<(String, [u8; 16])> {
     Ok((hashed_password, salt))
 }
 
+/// Verifies password for the given profile
 pub fn verify_password(input_password: &str, profile: Profile) -> bool {
     argon2::verify_encoded(&profile.password_hash, input_password.as_bytes())
         .unwrap_or(false)

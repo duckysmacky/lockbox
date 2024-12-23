@@ -1,8 +1,13 @@
+//! Contains functions for path manipulation
+
 use std::{fs, io, ffi::OsString};
 use std::path::{Path, PathBuf};
 use crate::core::file::parser;
 use crate::{log_info, log_warn};
 
+/// Opens and parses provided path, returning a flattened list of all found paths. Verifies if the
+/// given paths exists. In case of a directory being provided returns all paths inside of it. Can
+/// be optionally be marked to search recursively all files within all inner directories.
 pub fn parse_paths(input_paths: Vec<PathBuf>, recursive: bool) -> Vec<PathBuf> {
     let mut file_paths: Vec<PathBuf> = Vec::new();
 
@@ -43,6 +48,7 @@ fn read_dir(dir_path: &Path, file_paths: &mut Vec<PathBuf>, recursive: bool) -> 
     Ok(())
 }
 
+/// Searches `.box` files within a directory for one which matches its original name with provided
 fn search_for_original(dir_path: &Path, target_name: OsString) -> io::Result<PathBuf> {
     for entry in fs::read_dir(dir_path)? {
         let path = entry?.path();

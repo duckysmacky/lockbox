@@ -1,3 +1,5 @@
+//! Core API wrapper functions which handle the CLI input
+
 use std::{collections::VecDeque, path::PathBuf, ffi::OsStr};
 use std::process::exit;
 use clap::ArgMatches;
@@ -5,7 +7,8 @@ use crate::core::utils::path;
 use crate::{Error, options, log_error, log_success, log_warn};
 use super::prompts;
 
-pub fn r#box(g_args: &ArgMatches, args: &ArgMatches) -> (u32, u32) {
+
+pub fn handle_box(g_args: &ArgMatches, args: &ArgMatches) -> (u32, u32) {
     let mut total_files: u32 = 0;
     let mut error_files: u32 = 0;
 
@@ -73,7 +76,7 @@ pub fn r#box(g_args: &ArgMatches, args: &ArgMatches) -> (u32, u32) {
     (total_files, error_files)
 }
 
-pub fn unbox(g_args: &ArgMatches, args: &ArgMatches) -> (u32, u32) {
+pub fn handle_unbox(g_args: &ArgMatches, args: &ArgMatches) -> (u32, u32) {
     let mut total_files: u32 = 0;
     let mut error_files: u32 = 0;
 
@@ -139,7 +142,7 @@ pub fn unbox(g_args: &ArgMatches, args: &ArgMatches) -> (u32, u32) {
     (total_files, error_files)
 }
 
-pub fn profile_create(g_args: &ArgMatches, args: &ArgMatches) {
+pub fn handle_profile_create(g_args: &ArgMatches, args: &ArgMatches) {
     let password = match g_args.get_one::<String>("PASSWORD") {
         None => prompts::prompt_password("Please enter a password for the new profile:"),
         Some(password) => password.to_string()
@@ -155,7 +158,7 @@ pub fn profile_create(g_args: &ArgMatches, args: &ArgMatches) {
     }
 }
 
-pub fn profile_delete(g_args: &ArgMatches, args: &ArgMatches) {
+pub fn handle_profile_delete(g_args: &ArgMatches, args: &ArgMatches) {
     let name = args.get_one::<String>("NAME").expect("Profile name is required");
 
     let password = match g_args.get_one::<String>("PASSWORD") {
@@ -185,7 +188,7 @@ pub fn profile_delete(g_args: &ArgMatches, args: &ArgMatches) {
     }
 }
 
-pub fn profile_set(g_args: &ArgMatches, args: &ArgMatches) {
+pub fn handle_profile_set(g_args: &ArgMatches, args: &ArgMatches) {
     let name = args.get_one::<String>("NAME").expect("Profile name is required");
 
     let password = match g_args.get_one::<String>("PASSWORD") {
@@ -218,7 +221,7 @@ pub fn profile_set(g_args: &ArgMatches, args: &ArgMatches) {
     }
 }
 
-pub fn profile_get(_g_args: &ArgMatches, _args: &ArgMatches) {
+pub fn handle_profile_get(_g_args: &ArgMatches, _args: &ArgMatches) {
     let profile_name = crate::get_profile();
     if let Err(err) = profile_name {
         match err {
@@ -237,7 +240,7 @@ pub fn profile_get(_g_args: &ArgMatches, _args: &ArgMatches) {
     }
 }
 
-pub fn profile_list(_g_args: &ArgMatches, _args: &ArgMatches) {
+pub fn handle_profile_list(_g_args: &ArgMatches, _args: &ArgMatches) {
     let profiles = crate::get_profiles();
     if let Err(err) = profiles {
         match err {
@@ -268,7 +271,7 @@ pub fn profile_list(_g_args: &ArgMatches, _args: &ArgMatches) {
     }
 }
 
-pub fn key_new(g_args: &ArgMatches, _args: &ArgMatches) {
+pub fn handle_key_new(g_args: &ArgMatches, _args: &ArgMatches) {
     let password = match g_args.get_one::<String>("PASSWORD") {
         None => prompts::prompt_password("Please enter the password for the current profile:"),
         Some(password) => password.to_string()
@@ -296,7 +299,7 @@ pub fn key_new(g_args: &ArgMatches, _args: &ArgMatches) {
     }
 }
 
-pub fn key_get(g_args: &ArgMatches, args: &ArgMatches) {
+pub fn handle_key_get(g_args: &ArgMatches, args: &ArgMatches) {
     let password = match g_args.get_one::<String>("PASSWORD") {
         None => prompts::prompt_password("Please enter the password for the current profile:"),
         Some(password) => password.to_string()
@@ -330,7 +333,7 @@ pub fn key_get(g_args: &ArgMatches, args: &ArgMatches) {
     }
 }
 
-pub fn key_set(g_args: &ArgMatches, args: &ArgMatches) {
+pub fn handle_key_set(g_args: &ArgMatches, args: &ArgMatches) {
 	let password = match g_args.get_one::<String>("PASSWORD") {
         None => prompts::prompt_password("Please enter the password for the current profile:"),
         Some(password) => password.to_string()
