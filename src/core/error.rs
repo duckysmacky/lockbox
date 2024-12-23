@@ -6,6 +6,7 @@ use std::{fmt, io};
 /// error types should cover most of the possible program errors
 pub type Result<T> = std::result::Result<T, Error>;
 
+/// Custom Lockbox error type
 #[derive(Debug, PartialEq, Eq)]
 pub enum Error {
     /// Error related to anything to do with user's profile or one's creation

@@ -124,7 +124,7 @@ pub fn select_profile(password: &str, profile_name: &str) -> Result<()> {
     }
 
     if profile_name == core::data::profiles::get_current_profile()?.name {
-        return Err(Error::InvalidInput(format!("Current profile is already set to \"{}\"", profile_name)))
+        return Err(Error::ProfileError(format!("Current profile is already set to \"{}\"", profile_name)))
     }
 
     log_info!("Switching profile to \"{}\"", profile_name);

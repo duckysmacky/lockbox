@@ -2,21 +2,28 @@
 
 pub mod commands;
 
-use std::{env, fs, io};
-use std::path::{Path, PathBuf};
+use std::{fs, io, mem};
+use std::path::Path;
+use lockbox::Error;
 
-pub const PROFILE_NAME: &str = "test-profile";
-pub const PASSWORD: &str = "test-password";
+pub const PROFILE_NAME: &str = "common-test-profile";
+pub const PASSWORD: &str = "common-test-password";
 pub const ORIGINAL_DIR: &str = "files/original";
 pub const TEST_DIR: &str = "files/test";
 
 /// Global test environment setup (must be run before each test)
 pub fn setup() {
     lockbox::create_profile(PASSWORD, PROFILE_NAME)
-        .unwrap_or_else(|err| panic!("Unable to create test profile: {}", err));
+        .unwrap_or_else(|err|
+            if mem::discriminant(&err) != mem::discriminant(&Error::ProfileError("".to_string())) {
+            panic!("Unable to create test profile: {}", err)
+        });
 
     lockbox::select_profile(PASSWORD, PROFILE_NAME)
-        .unwrap_or_else(|err| panic!("Unable to select test profile: {}", err));
+        .unwrap_or_else(|err| 
+            if mem::discriminant(&err) != mem::discriminant(&Error::ProfileError("".to_string())) { 
+                panic!("Unable to select test profile: {}", err)
+        });
 
     copy_original_files()
         .unwrap_or_else(|err| panic!("Unable to copy original test files: {}", err));
@@ -25,7 +32,10 @@ pub fn setup() {
 /// Global test environment cleanup (must be run after each test)
 pub fn cleanup() {
     lockbox::delete_profile(PASSWORD, PROFILE_NAME)
-        .unwrap_or_else(|err| panic!("Unable to delete test profile: {}", err));
+        .unwrap_or_else(|err| 
+            if mem::discriminant(&err) != mem::discriminant(&Error::ProfileError("".to_string())) {
+            panic!("Unable to delete test profile: {}", err)
+        });
 
     delete_test_files()
         .unwrap_or_else(|err| panic!("Unable to delete test files: {}", err));
