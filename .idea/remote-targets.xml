@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="RemoteTargetsManager">
+    <targets>
+      <target name="WSL - Ubuntu" type="wsl" uuid="a7b6a403-e16b-43d1-8926-0b2024bac4f8">
+        <config>
+          <option name="distributionMsId" value="Ubuntu" />
+          <option name="projectRootOnTarget" value="{exitCode=0, timeout=false, cancelled=false, stdout=/tmp/tmp.aaipkYxtFg&#10;, stderr=}/lockbox" />
+        </config>
+        <ContributedStateBase type="RsLanguageRuntime">
+          <config>
+            <option name="cargoPath" value="/usr/bin/cargo" />
+            <option name="cargoVersion" value="1.75.0" />
+            <option name="rustcPath" value="/usr/bin/rustc" />
+            <option name="rustcVersion" value="error: couldn't read  --version: No such file or directory (os error 2)" />
+          </config>
+        </ContributedStateBase>
+      </target>
+    </targets>
+  </component>
+</project>
