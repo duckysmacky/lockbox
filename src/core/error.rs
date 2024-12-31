@@ -11,6 +11,8 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub enum Error {
     /// Error related to anything to do with user's profile or one's creation
     ProfileError(String),
+    /// Error related to anything to do with current program custom configuration
+    ConfigError(String),
     /// Error related to accessing, reading or writing files
     IOError(String),
     /// Error related to encryption, decryption, hashing and anything to do with cypher
@@ -27,6 +29,7 @@ impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Error::ProfileError(ref msg) => write!(f, "Profile error - {}", msg),
+            Error::ConfigError(ref msg) => write!(f, "Config error - {}", msg),
             Error::IOError(ref err) => write!(f, "{}", err),
             Error::CipherError(ref err) => write!(f, "{}", err),
             Error::InvalidData(ref msg) => write!(f, "{}", msg),
