@@ -1,10 +1,9 @@
-//! Contains functions for the custom file format parsing and general IO operations
+//! Contains functions for the custom file format parsing and general IO operations around it
 
 use std::ffi::OsString;
 use serde::{Deserialize, Serialize};
-use crate::{Nonce, Checksum};
+use crate::{Checksum, Nonce};
 
-pub mod io;
 pub mod parser;
 pub mod header;
 
