@@ -8,9 +8,7 @@ use crate::{Error, Result};
 /// Returns the application data directory based on the OS. Used for storing profiles and other
 /// information for program's functionality which is not meant to be edited by the user
 pub fn get_data_dir() -> Result<PathBuf> {
-    let home_path = env::var("HOME")
-        .map_err(|err| Error::OSError(err.to_string()))?;
-    let mut data_dir = PathBuf::from(home_path);
+    let mut data_dir = get_env_home()?;
 
     if cfg!(target_os = "windows") {
         data_dir.push("Lockbox/Data/");
@@ -29,10 +27,8 @@ pub fn get_data_dir() -> Result<PathBuf> {
 /// Returns the application config directory based on the OS. Used for storing configuration files
 /// which can be edited by user to change program's functionality
 pub fn get_config_dir() -> Result<PathBuf> {
-    let home_path = env::var("HOME")
-        .map_err(|err| Error::OSError(err.to_string()))?;
-    let mut config_dir = PathBuf::from(home_path);
-
+    let mut config_dir = get_env_home()?;
+    
     if cfg!(target_os = "windows") {
         config_dir.push("Lockbox/Config/");
     } else if cfg!(target_os = "macos") {
@@ -44,5 +40,20 @@ pub fn get_config_dir() -> Result<PathBuf> {
     if !config_dir.exists() {
         fs::create_dir_all(&config_dir)?;
     }
+    Ok(config_dir)
+}
+
+/// Returns the "Home" environment variable based on the OS for later file storage. For windows it
+/// is $APPDATA, for others it is $HOME
+fn get_env_home() -> Result<PathBuf> {
+    let home_path = {
+        if cfg!(target_os = "windows") {
+            env::var("APPDATA")
+        } else {
+            env::var("HOME")
+        }
+    }.map_err(|err| Error::OSError(err.to_string()))?;
+
+    let config_dir = PathBuf::from(home_path);
     Ok(config_dir)
 }
