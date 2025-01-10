@@ -66,7 +66,7 @@ pub fn get_command() -> Command {
             .arg(Arg::new("SHOW-FULL-PATH")
                 .short('f')
                 .long("full")
-                .help("Output the full path to the encrypted file")
+                .help("Output the full relative path to the encrypted file")
                 .action(ArgAction::SetTrue)
             )
             // .arg(Arg::new("overwrite") // TODO
@@ -117,7 +117,7 @@ pub fn get_command() -> Command {
             .arg(Arg::new("SHOW-FULL-PATH")
                 .short('f')
                 .long("full")
-                .help("Output the full path to the decrypted file")
+                .help("Output the full relative path to the decrypted file")
                 .action(ArgAction::SetTrue)
             )
             // .arg(Arg::new("overwrite") // TODO

@@ -2,37 +2,66 @@
 
 use std::io::{self, BufReader, Write};
 use std::fs::File;
+use std::path::PathBuf;
+use serde::{Deserialize, Serialize};
 use crate::core::encryption::cipher;
-use crate::{Error, Result, log_debug};
-use super::{auth, get_data_dir, Profile, ProfilesData};
+use crate::{log_debug, Error, Key, Result};
+use crate::core::data::os::get_data_dir;
+use super::auth;
 
-/// Name of the profile data file
-const PROFILES_FILE_PATH: &str = "profiles.json";
+/// Name of the file which stores all the profile data
+const PROFILES_FILE_NAME: &str = "profiles.json";
+
+/// Struct representing a JSON profile data file
+#[derive(Serialize, Deserialize, Debug)]
+struct ProfilesData {
+    pub current_profile: Option<String>,
+    pub profiles: Vec<Profile>
+}
+
+/// Struct containing main information about a profile
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Profile {
+    pub name: String,
+    pub key: Key,
+    pub password_hash: String,
+}
+
+impl ProfilesData {
+    pub fn default() -> ProfilesData {
+        ProfilesData {
+            current_profile: None,
+            profiles: vec![]
+        }
+    }
+}
 
 /// Sets the current profile to profile which name was supplied. Returns an error if given profile
 /// doesn't exist
 pub fn set_current_profile(profile_name: &str) -> Result<()> {
     log_debug!("Setting current profile to \"{}\"", profile_name);
 
-    let profiles_data = get_profiles_file();
+    let data_dir = get_data_dir()?;
+    let profiles_data = read_profiles_file(&data_dir);
     if let Err(err) = profiles_data {
         if err.kind() == io::ErrorKind::NotFound {
             return Err(Error::ProfileError("No profile data found".to_string()))
         }
         return Err(Error::IOError(format!("Error getting profiles data: {}", err)))
     }
-    let mut profiles_data = profiles_data.unwrap();
+    let mut profiles_data = profiles_data?;
     profiles_data.current_profile = Some(profile_name.to_string());
 
-    save_profiles_file(profiles_data)
-        .map_err(|err| Error::from(err))
+    write_profiles_file(profiles_data, &data_dir)?;
+    Ok(())
 }
 
 /// Returns currently selected profile data
 pub fn get_current_profile() -> Result<Profile> {
     log_debug!("Getting current profile");
 
-    let profiles_data = get_profiles_file();
+    let data_dir = get_data_dir()?;
+    let profiles_data = read_profiles_file(&data_dir);
     if let Err(err) = profiles_data {
         if err.kind() == io::ErrorKind::NotFound {
             return Err(Error::ProfileError("No profile data found".to_string()))
@@ -40,7 +69,7 @@ pub fn get_current_profile() -> Result<Profile> {
         return Err(Error::IOError(format!("Error getting profiles data: {}", err)))
     }
 
-    let current_profile = profiles_data.unwrap().current_profile;
+    let current_profile = profiles_data?.current_profile;
     if current_profile.is_none() {
         return Err(Error::ProfileError("No profile is currently selected".to_string()))
     }
@@ -61,11 +90,12 @@ pub fn get_profile(profile_name: &str) -> Result<Profile> {
     Err(Error::ProfileError(format!("Profile with name \"{}\" doesn\'t exist", profile_name)))
 }
 
-/// Returns a list of currently avaliable profiles
+/// Returns a list of currently available profiles
 pub fn get_profiles() -> Result<Vec<Profile>> {
     log_debug!("Getting all available profiles");
 
-    let profiles_data = get_profiles_file();
+    let data_dir = get_data_dir()?;
+    let profiles_data = read_profiles_file(&data_dir);
     if let Err(err) = profiles_data {
         if err.kind() == io::ErrorKind::NotFound {
             return Err(Error::ProfileError("No profile data found".to_string()))
@@ -73,7 +103,7 @@ pub fn get_profiles() -> Result<Vec<Profile>> {
         return Err(Error::IOError(format!("Error getting profiles data: {}", err)))
     }
 
-    Ok(profiles_data.unwrap().profiles)
+    Ok(profiles_data?.profiles)
 }
 
 /// Creates a new profile with provided name and password. Password is hashed automatically
@@ -99,7 +129,8 @@ pub fn create_new_profile(name: &str, password: &str) -> Result<()> {
 pub fn delete_profile(profile_name: &str) -> Result<()> {
     log_debug!("Deleting profile with name \"{}\"", profile_name);
 
-    let mut profiles_data = get_profiles_file()?;
+    let data_dir = get_data_dir()?;
+    let mut profiles_data = read_profiles_file(&data_dir)?;
     for (i, profile) in profiles_data.profiles.iter().enumerate() {
         if profile.name == profile_name {
             profiles_data.profiles.remove(i);
@@ -110,7 +141,7 @@ pub fn delete_profile(profile_name: &str) -> Result<()> {
                     Some(profiles_data.profiles.get(0).unwrap().name.clone())
                 }
             };
-            save_profiles_file(profiles_data)?;
+            write_profiles_file(profiles_data, &data_dir)?;
             return Ok(())
         }
     }
@@ -118,11 +149,12 @@ pub fn delete_profile(profile_name: &str) -> Result<()> {
 }
 
 /// Saves provided profile data to profiles file. Updates existing profile or creates a new one, if
-/// doesn't already exist
-pub fn save_profile(updated_profile: Profile) -> io::Result<()> {
+/// it doesn't already exist
+pub fn save_profile(updated_profile: Profile) -> Result<()> {
     log_debug!("Saving profile data: {:?}", &updated_profile);
 
-    let mut profiles_data = get_profiles_file()?;
+    let data_dir = get_data_dir()?;
+    let mut profiles_data = read_profiles_file(&data_dir)?;
     let profile_name = updated_profile.name.clone();
 
     if profiles_data.profiles.is_empty() {
@@ -143,21 +175,21 @@ pub fn save_profile(updated_profile: Profile) -> io::Result<()> {
         }
     }
 
-    save_profiles_file(profiles_data)
+    write_profiles_file(profiles_data, &data_dir)?;
+    Ok(())
 }
 
 /// Writes to profiles profile provided profiles data. Overwrites old data
-fn save_profiles_file(profiles_data: ProfilesData) -> io::Result<()> {
+fn write_profiles_file(profiles_data: ProfilesData, profiles_directory: &PathBuf) -> io::Result<()> {
     log_debug!("Writing data to profiles file: {:?}", profiles_data);
 
-    let mut path = get_data_dir();
-    path.push(PROFILES_FILE_PATH);
+    let profiles_file = profiles_directory.join(PROFILES_FILE_NAME);
 
     let mut file = File::options()
         .write(true)
         .create(true)
         .truncate(true)
-        .open(path)?;
+        .open(profiles_file)?;
 
     serde_json::to_writer(&file, &profiles_data)
         .map_err(|_| io::Error::new(io::ErrorKind::InvalidData, "Unable to serialize profiles file data"))?;
@@ -167,31 +199,34 @@ fn save_profiles_file(profiles_data: ProfilesData) -> io::Result<()> {
 }
 
 /// Reads and returns profiles data from file
-fn get_profiles_file() -> io::Result<ProfilesData> {
+fn read_profiles_file(profiles_directory: &PathBuf) -> io::Result<ProfilesData> {
     log_debug!("Getting profiles file data");
 
-    let mut path = get_data_dir();
-    path.push(PROFILES_FILE_PATH);
+    let profiles_file = profiles_directory.join(PROFILES_FILE_NAME);
 
-    let file = match File::open(&path) {
-        Ok(file) => file,
-        Err(err) => {
-            if err.kind() == io::ErrorKind::NotFound {
-                save_profiles_file(ProfilesData {
-                    current_profile: None,
-                    profiles: vec![],
-                })?;
-                File::open(path).unwrap()
-            } else {
-                return Err(err);
+    let profiles_data: ProfilesData = match File::open(&profiles_file) {
+            Ok(file) => {
+                let reader = BufReader::new(file);
+                let profiles_data = serde_json::from_reader(reader);
+
+                if let Err(_) = profiles_data {
+                    return Err(io::Error::new(
+                        io::ErrorKind::InvalidData,
+                        "Unable to deserialize profiles file data"
+                    ))
+                } else {
+                    profiles_data?
+                }
+            },
+            Err(err) => {
+                if err.kind() == io::ErrorKind::NotFound {
+                    ProfilesData::default()
+                } else {
+                    return Err(err);
+                }
             }
-        }
-    };
-    let reader = BufReader::new(file);
+        };
 
-    let profiles: ProfilesData = serde_json::from_reader(reader)
-        .map_err(|_| io::Error::new(io::ErrorKind::InvalidData, "Unable to deserialize profiles file data"))?;
-
-    log_debug!("Got keys file data: {:?}", profiles);
-    Ok(profiles)
+    log_debug!("Got keys file data: {:?}", profiles_data);
+    Ok(profiles_data)
 }

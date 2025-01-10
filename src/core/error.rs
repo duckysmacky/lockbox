@@ -15,6 +15,8 @@ pub enum Error {
     ConfigError(String),
     /// Error related to accessing, reading or writing files
     IOError(String),
+    /// Error related to the user's filesystem, operating system and similar things
+    OSError(String),
     /// Error related to encryption, decryption, hashing and anything to do with cypher
     CipherError(String),
     /// Error related to incorrect data being provided, read or failed parsing
@@ -31,6 +33,7 @@ impl fmt::Display for Error {
             Error::ProfileError(ref msg) => write!(f, "Profile error - {}", msg),
             Error::ConfigError(ref msg) => write!(f, "Config error - {}", msg),
             Error::IOError(ref err) => write!(f, "{}", err),
+            Error::OSError(ref err) => write!(f, "{}", err),
             Error::CipherError(ref err) => write!(f, "{}", err),
             Error::InvalidData(ref msg) => write!(f, "{}", msg),
             Error::InvalidInput(ref msg) => write!(f, "{}", msg),

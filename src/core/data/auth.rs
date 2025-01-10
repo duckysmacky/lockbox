@@ -3,7 +3,7 @@
 use argon2::{self, Config};
 use rand::random;
 use crate::{Result, Error};
-use super::Profile;
+use crate::core::data::profiles::Profile;
 
 /// Hashes the given password. Returns hashed password and salt
 pub fn hash_password(password: &str) -> Result<(String, [u8; 16])> {

@@ -47,10 +47,6 @@ pub fn handle_box(g_args: &ArgMatches, args: &ArgMatches) -> (u32, u32) {
                     log_error!("New profile can be created with \"lockbox profile new\"");
                     exit(1);
                 },
-                Error::ConfigError(_) => {
-                    log_error!("{}", err);
-                    exit(1);
-                },
                 Error::AuthError(_) => {
                     log_error!("{}", err);
                     log_error!("Please try again");
@@ -70,6 +66,10 @@ pub fn handle_box(g_args: &ArgMatches, args: &ArgMatches) -> (u32, u32) {
                 },
                 Error::InvalidInput(_) => {
                     log_warn!("Skipping {:?}: {}", file_name, err);
+                },
+                _ => {
+                    log_error!("{}", err);
+                    exit(1);
                 }
             }
         } else {
@@ -117,10 +117,6 @@ pub fn handle_unbox(g_args: &ArgMatches, args: &ArgMatches) -> (u32, u32) {
                     log_error!("New profile can be created with \"lockbox profile new\"");
                     exit(1);
                 },
-                Error::ConfigError(_) => {
-                    log_error!("{}", err);
-                    exit(1);
-                },
                 Error::AuthError(_) => {
                     log_error!("{}", err);
                     log_error!("Please try again");
@@ -140,6 +136,10 @@ pub fn handle_unbox(g_args: &ArgMatches, args: &ArgMatches) -> (u32, u32) {
                 },
                 Error::InvalidInput(_) => {
                     log_warn!("Skipping {:?}: {}", file_name, err);
+                },
+                _ => {
+                    log_error!("{}", err);
+                    exit(1);
                 }
             }
         } else {
