@@ -19,6 +19,7 @@ fn print_output(output: &Output) {
 
 /// Local test environment setup
 fn setup() {
+    common::cleanup();
     common::setup();
 }
 

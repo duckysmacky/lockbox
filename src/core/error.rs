@@ -13,6 +13,8 @@ pub enum Error {
     ProfileError(String),
     /// Error related to anything to do with current program custom configuration
     ConfigError(String),
+    /// Error related to serializing and deserializing of profile, config and other files
+    SerializeError(String),
     /// Error related to accessing, reading or writing files
     IOError(String),
     /// Error related to the user's filesystem, operating system and similar things
@@ -32,6 +34,7 @@ impl fmt::Display for Error {
         match self {
             Error::ProfileError(ref msg) => write!(f, "Profile error - {}", msg),
             Error::ConfigError(ref msg) => write!(f, "Config error - {}", msg),
+            Error::SerializeError(ref msg) => write!(f, "Serialize error - {}", msg),
             Error::IOError(ref err) => write!(f, "{}", err),
             Error::OSError(ref err) => write!(f, "{}", err),
             Error::CipherError(ref err) => write!(f, "{}", err),
@@ -45,5 +48,11 @@ impl fmt::Display for Error {
 impl From<io::Error> for Error {
     fn from(err: io::Error) -> Error {
         Error::IOError(err.to_string())
+    }
+}
+
+impl From<serde_json::Error> for Error {
+    fn from(err: serde_json::Error) -> Error {
+        Error::SerializeError(err.to_string())
     }
 }

@@ -3,7 +3,6 @@
 use argon2::{self, Config};
 use rand::random;
 use crate::{Result, Error};
-use crate::core::data::profiles::Profile;
 
 /// Hashes the given password. Returns hashed password and salt
 pub fn hash_password(password: &str) -> Result<(String, [u8; 16])> {
@@ -14,8 +13,8 @@ pub fn hash_password(password: &str) -> Result<(String, [u8; 16])> {
     Ok((hashed_password, salt))
 }
 
-/// Verifies password for the given profile
-pub fn verify_password(input_password: &str, profile: Profile) -> bool {
-    argon2::verify_encoded(&profile.password_hash, input_password.as_bytes())
+/// Verifies password by comparing it to the password hash
+pub fn verify_password(password_hash: &str, password: &str) -> bool {
+    argon2::verify_encoded(password_hash, password.as_bytes())
         .unwrap_or(false)
 }

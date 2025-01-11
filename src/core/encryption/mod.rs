@@ -5,8 +5,8 @@ use std::path::{Path, PathBuf};
 use crate::{Error, Result};
 use crate::options;
 use crate::log_debug;
-use super::data::{auth, keys, profiles};
-use super::file::{header, io, parser};
+use super::data::{io, keys, profile};
+use super::file::{header, parser};
 
 pub mod cipher;
 pub mod checksum;
@@ -15,9 +15,10 @@ pub mod checksum;
 /// and get access to current profile. Additional options can be supplied to change the encryption
 /// process
 pub fn encrypt(password: &str, input_path: &Path, opts: &mut options::EncryptionOptions) -> Result<()> {
-    let profile = profiles::get_current_profile()?;
+    let mut profiles = profile::get_profiles();
+    let profile = profiles.get_current_profile()?;
 
-    if !auth::verify_password(password, profile) {
+    if !profile.verify_password(password) {
         return Err(Error::AuthError("Invalid password entered".to_string()))
     }
 
@@ -66,9 +67,10 @@ pub fn encrypt(password: &str, input_path: &Path, opts: &mut options::Encryption
 /// verify and get access to current profile. Additional options can be supplied to change the
 /// decryption process
 pub fn decrypt(password: &str, input_path: &Path, opts: &mut options::DecryptionOptions) -> Result<()> {
-    let profile = profiles::get_current_profile()?;
+    let mut profiles = profile::get_profiles();
+    let profile = profiles.get_current_profile()?;
 
-    if !auth::verify_password(password, profile) {
+    if !profile.verify_password(password) {
         return Err(Error::AuthError("Invalid password entered".to_string()))
     }
 
@@ -116,7 +118,7 @@ pub fn decrypt(password: &str, input_path: &Path, opts: &mut options::Decryption
     }
 
     let file_path = path_buffer.as_path();
-    io::write_bytes(&file_path, &body).map_err(Error::from)?;
+    io::write_bytes(&file_path, &body, true).map_err(Error::from)?;
 
     Ok(())
 }

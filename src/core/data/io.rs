@@ -49,7 +49,7 @@ pub fn write_bytes(path: &Path, bytes: &[u8], truncate: bool) -> Result<()> {
 
 /// Writes string to the specified file. Creates a new one if already doesn't exist
 pub fn write_file(path: &Path, contents: &str, truncate: bool) -> Result<()> {
-    log_debug!("Writing file to \"{}\"", path.display());
+    log_debug!("Writing to \"{}\"", path.display());
     let mut file = File::options()
         .write(true)
         .create(true)
@@ -59,6 +59,6 @@ pub fn write_file(path: &Path, contents: &str, truncate: bool) -> Result<()> {
     file.write_all(contents.as_bytes())?;
     file.flush()?;
 
-    log_debug!("Wrote {} to file", contents.len());
+    log_debug!("Wrote {} to file", contents);
     Ok(())
 }
