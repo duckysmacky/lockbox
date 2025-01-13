@@ -5,12 +5,12 @@ use crate::core::data::profile::LockboxProfiles;
 use crate::{log_debug, log_error};
 use crate::core::data::config::LockboxConfig;
 
-pub mod keys;
-mod auth;
 pub mod profile;
+pub mod keys;
 pub mod config;
 pub mod os;
 pub mod io;
+mod auth;
 
 /// Fetches the Lockbox profiles by importing it from the file on the disk. Will error and exit in
 /// case of the operation failing

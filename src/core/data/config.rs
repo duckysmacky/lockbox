@@ -1,4 +1,11 @@
-//! Contains functions for program config
+//! Contains everything related to Lockbox configuration
+//! 
+//! Provides a base `LockboxConfig` struct which contains user-defined configuration for the
+//! program, which is set to default values on initialization. It is represented as a `config.toml`
+//! file on the disk, which is located in the program's default config directory.
+//! 
+//! Each configuration category is a separate struct (e.g.: `GeneralConfig`). Each field is public
+//! for accessing configuration fields
 
 use std::io;
 use serde::{Deserialize, Serialize};
@@ -36,7 +43,6 @@ pub struct StorageConfig { }
 impl LockboxConfig {
     /// Imports self from the stored "config.toml" file. In case of the file missing, generates a
     /// new file with the default configuration
-    #[allow(dead_code)]
     pub fn import() -> Result<Self> {
         log_debug!("Importing Lockbox config");
         let config_directory = os::get_config_dir()?;

@@ -1,4 +1,15 @@
-//! Contains function for user profile manipulation
+//! Module containing everything related to Lockbox profile management. 
+//! 
+//! Provides a base struct `LockboxProfiles` used for holding information about user's profiles
+//! which is represented as a `profiles.toml` file on the disk, which is located in the program's 
+//! default data directory. 
+//! 
+//! Also contains a `Profile` struct which is used for storing information
+//! about particular user profile. Each profile consists of unique name, password and key with it's
+//! main goal is to hold the stated encryption key. There can be many profiles created at the same
+//! time, but each has to have an unique name. `Key` is generated with the creation of the profile
+//! which it belongs to. Password is also hashed automatically on creation and stored in that form
+//! on the disk
 
 use super::auth;
 use super::io::{read_file, write_file};
