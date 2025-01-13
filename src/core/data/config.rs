@@ -1,12 +1,12 @@
 //! Contains functions for program config
 
+use std::io;
 use serde::{Deserialize, Serialize};
-use std::fs::File;
-use std::io::{self, Read, Write};
 use std::path::PathBuf;
-use crate::log_debug;
+use crate::core::data::io::{read_file, write_file};
+use crate::core::data::os;
+use crate::{log_debug, log_info};
 use crate::core::error::{Result, Error};
-use crate::core::data::os::get_config_dir;
 
 /// Name of the main configuration file
 const CONFIG_FILE_NAME: &str = "lockbox.toml";
@@ -16,7 +16,9 @@ const CONFIG_FILE_NAME: &str = "lockbox.toml";
 pub struct LockboxConfig {
     pub general: GeneralConfig,
     pub encryption: EncryptionConfig,
-    pub storage: StorageConfig
+    pub storage: StorageConfig,
+    #[serde(skip)]
+    file_path: PathBuf
 }
 
 /// Struct containing general configuration for the program
@@ -32,92 +34,56 @@ pub struct EncryptionConfig { }
 pub struct StorageConfig { }
 
 impl LockboxConfig {
-    pub fn default() -> LockboxConfig {
+    /// Imports self from the stored "config.toml" file. In case of the file missing, generates a
+    /// new file with the default configuration
+    #[allow(dead_code)]
+    pub fn import() -> Result<Self> {
+        log_debug!("Importing Lockbox config");
+        let config_directory = os::get_config_dir()?;
+        let config_file = config_directory.join(CONFIG_FILE_NAME);
+
+        let config = match read_file(&config_file) {
+            Ok(file_data) => {
+                let mut config: LockboxConfig = toml::from_str(&file_data)
+                    .map_err(|err| Error::SerializeError(err.to_string()))?;
+                config.file_path = config_file;
+                config
+            },
+            Err(err) => {
+                if err.kind() == io::ErrorKind::NotFound {
+                    log_info!("\"config.toml\" file doesn't exist. Generating new default config");
+                    Self::new(config_file)
+                } else {
+                    return Err(err.into());
+                }
+            }
+        };
+
+        Ok(config)
+    }
+
+    /// Bare-minimum constructor to use in case of file not being available to import from
+    fn new(
+        file_path: PathBuf
+    ) -> LockboxConfig {
         LockboxConfig {
             general: GeneralConfig { },
             encryption: EncryptionConfig { },
-            storage: StorageConfig { }
+            storage: StorageConfig { },
+            file_path
         }
     }
-}
 
-/// Fetches and returns config file data
-#[allow(dead_code)]
-pub fn get_config() -> Result<LockboxConfig> {
-    log_debug!("Getting config data");
+    /// Saves the configuration to the config file
+    #[allow(dead_code)]
+    pub fn save(&self) -> Result<()> {
+        log_debug!("Saving configuration data to \"config.toml\"");
+        let toml_data = toml::to_string(&self)
+            .map_err(|err| Error::SerializeError(err.to_string()))?;
 
-    let config_dir = get_config_dir()?;
-    match read_config_file(&config_dir) {
-        Ok(config) => Ok(config),
-        Err(err) => {
-            if err.kind() == io::ErrorKind::NotFound {
-                Err(Error::ConfigError("No config file found".to_string()))
-            } else {
-                Err(Error::IOError(format!("Error reading config file: {}", err)))
-            }
-        }
+        write_file(&self.file_path, &toml_data, true)?;
+        Ok(())
     }
-}
-
-/// Saves the provided config file data
-#[allow(dead_code)]
-pub fn save_config(config: LockboxConfig) -> Result<()> {
-    log_debug!("Saving config data");
-
-    let config_dir = get_config_dir()?;
-    write_config_file(config, &config_dir).map_err(|err| Error::from(err))
-}
-
-/// Writes to config file. Overwrites old data
-fn write_config_file(config_data: LockboxConfig, config_directory: &PathBuf) -> io::Result<()> {
-    log_debug!("Writing data to config file: {:?}", config_data);
-
-    let config_file = config_directory.join(CONFIG_FILE_NAME);
-
-    let mut file = File::options()
-        .write(true)
-        .create(true)
-        .truncate(true)
-        .open(config_file)?;
-
-    file.write(toml::to_string(&config_data).unwrap().as_bytes())
-        .map_err(|_| io::Error::new(
-            io::ErrorKind::InvalidData,
-            "Invalid data was provided for the configuration file"
-        ))?;
-
-    file.flush()?;
-    Ok(())
-}
-
-/// Reads and returns config data from file
-fn read_config_file(config_directory: &PathBuf) -> io::Result<LockboxConfig> {
-    log_debug!("Getting config file data");
-
-    let config_file = config_directory.join(CONFIG_FILE_NAME);
-
-    let config_data = match File::open(&config_file) {
-        Ok(mut file) => {
-            let mut file_data = String::new();
-            file.read_to_string(&mut file_data)?;
-
-            toml::from_str(&file_data)
-                .map_err(|err| io::Error::new(
-                    io::ErrorKind::InvalidData,
-                    format!("Config file contains invalid data: {}", err.to_string()))
-                )?
-        },
-        Err(err) => {
-            if err.kind() == io::ErrorKind::NotFound {
-                LockboxConfig::default()
-            } else {
-                return Err(err)
-            }
-        }
-    };
-
-    log_debug!("Got config file data: {:?}", config_data);
-    Ok(config_data)
 }
 
 #[cfg(test)]
@@ -126,10 +92,10 @@ mod tests {
 
     #[test]
     #[ignore]
+    /// Creates the `config.toml` file in the program configuration directory and writes the
+    /// default configuration to it
     fn write_default_config() {
-        let config_dir = get_config_dir().unwrap();
-        write_config_file(LockboxConfig::default(), &config_dir).unwrap();
-        let config = get_config();
+        let config = LockboxConfig::import();
 
         assert!(config.is_ok())
     }
