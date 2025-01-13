@@ -4,7 +4,7 @@ use super::auth;
 use super::io::{read_file, write_file};
 use crate::core::data::os;
 use crate::core::encryption::cipher;
-use crate::{log_debug, log_error, log_info, Error, Key, Result};
+use crate::{log_debug, log_info, Error, Key, Result};
 use serde::{Deserialize, Serialize};
 use std::io::{self};
 use std::path::PathBuf;
@@ -215,15 +215,17 @@ impl Profile {
     }
 }
 
-pub fn get_profiles() -> LockboxProfiles {
-    log_debug!("Getting Lockbox profiles");
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-    match LockboxProfiles::import() {
-        Ok(profiles) => profiles,
-        Err(err) => {
-            log_error!("Unable to import Lockbox profiles");
-            log_error!("{}", err);
-            std::process::exit(1);
-        }
+    #[test]
+    #[ignore]
+    /// Creates the `profiles.json` file in the program data directory and fills it with default
+    /// information
+    fn write_default_profiles() {
+        let config = LockboxProfiles::import();
+
+        assert!(config.is_ok())
     }
 }

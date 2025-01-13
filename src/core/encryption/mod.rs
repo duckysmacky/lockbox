@@ -3,9 +3,10 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 use crate::{Error, Result};
+use crate::core::data;
 use crate::options;
 use crate::log_debug;
-use super::data::{io, keys, profile};
+use super::data::{io, keys};
 use super::file::{header, parser};
 
 pub mod cipher;
@@ -15,7 +16,7 @@ pub mod checksum;
 /// and get access to current profile. Additional options can be supplied to change the encryption
 /// process
 pub fn encrypt(password: &str, input_path: &Path, opts: &mut options::EncryptionOptions) -> Result<()> {
-    let mut profiles = profile::get_profiles();
+    let mut profiles = data::get_profiles();
     let profile = profiles.get_current_profile()?;
 
     if !profile.verify_password(password) {
@@ -67,7 +68,7 @@ pub fn encrypt(password: &str, input_path: &Path, opts: &mut options::Encryption
 /// verify and get access to current profile. Additional options can be supplied to change the
 /// decryption process
 pub fn decrypt(password: &str, input_path: &Path, opts: &mut options::DecryptionOptions) -> Result<()> {
-    let mut profiles = profile::get_profiles();
+    let mut profiles = data::get_profiles();
     let profile = profiles.get_current_profile()?;
 
     if !profile.verify_password(password) {
