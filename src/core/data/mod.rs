@@ -1,8 +1,8 @@
 //! Contains everything related to outside data manipulations, filesystem and operating system
 //! interactions
 
+use crate::{Result, log_debug};
 use crate::core::data::profile::LockboxProfiles;
-use crate::{log_debug, log_error};
 use crate::core::data::config::LockboxConfig;
 
 pub mod profile;
@@ -12,33 +12,19 @@ pub mod os;
 pub mod io;
 mod auth;
 
-/// Fetches the Lockbox profiles by importing it from the file on the disk. Will error and exit in
+/// Fetches the Lockbox profiles by importing it from the file on the disk. Will return an error in 
 /// case of the operation failing
-pub fn get_profiles() -> LockboxProfiles {
+pub fn get_profiles() -> Result<LockboxProfiles> {
     log_debug!("Getting Lockbox profiles");
-
-    match LockboxProfiles::import() {
-        Ok(profiles) => profiles,
-        Err(err) => {
-            log_error!("Unable to import Lockbox profiles");
-            log_error!("{}", err);
-            std::process::exit(1);
-        }
-    }
+    let data_directory = os::get_data_dir()?;
+    LockboxProfiles::import(data_directory)
 }
 
-/// Fetches the Lockbox config by importing it from the file on the disk. Will error and exit in
+/// Fetches the Lockbox config by importing it from the file on the disk. Will return an error in
 /// case of the operation failing
 #[allow(dead_code)]
-pub fn get_config() -> LockboxConfig {
+pub fn get_config() -> Result<LockboxConfig> {
     log_debug!("Getting Lockbox profiles");
-
-    match LockboxConfig::import() {
-        Ok(config) => config,
-        Err(err) => {
-            log_error!("Unable to import Lockbox config");
-            log_error!("{}", err);
-            std::process::exit(1);
-        }
-    }
+    let config_directory = os::get_config_dir()?;
+    LockboxConfig::import(config_directory)
 }

@@ -4,7 +4,8 @@ use std::{collections::VecDeque, path::PathBuf, ffi::OsStr};
 use std::process::exit;
 use clap::ArgMatches;
 use crate::core::utils::path;
-use crate::{Error, options, log_error, log_success, log_warn};
+use crate::{Error, options, log_error, log_success, log_warn, log_info};
+use crate::core::error::ProfileErrorKind;
 use super::prompts;
 
 
@@ -38,42 +39,14 @@ pub fn handle_box(g_args: &ArgMatches, args: &ArgMatches) -> (u32, u32) {
             false => path.file_name().unwrap_or(OsStr::new("<unknown file name>")).to_os_string()
         };
 
-        log_success!("Encrypting {:?}", file_name);
-
-        if let Err(err) = crate::encrypt(&password, path.as_path(), &mut options) {
-            match err {
-                Error::ProfileError(_) => {
-                    log_error!("{}", err);
-                    log_error!("New profile can be created with \"lockbox profile new\"");
-                    exit(1);
-                },
-                Error::AuthError(_) => {
-                    log_error!("{}", err);
-                    log_error!("Please try again");
-                    exit(1);
-                },
-                Error::IOError(_) => {
-                    log_error!("Unable to access {:?}: {}", file_name, err);
-                    error_files += 1;
-                },
-                Error::CipherError(_) => {
-                    log_error!("{}", err);
-                    error_files += 1;
-                },
-                Error::InvalidData(_) => {
-                    log_error!("Invalid file data in {:?}: {}", file_name, err);
-                    error_files += 1;
-                },
-                Error::InvalidInput(_) => {
-                    log_warn!("Skipping {:?}: {}", file_name, err);
-                },
-                _ => {
-                    log_error!("{}", err);
-                    exit(1);
-                }
+        log_info!("Encrypting {:?}", file_name);
+        match crate::encrypt(&password, path.as_path(), &mut options) {
+            Ok(_) => log_success!("Successfully encrypted {:?}", file_name),
+            Err(err) => {
+                log_error!("Unable to encrypt \"{}\"", file_name.to_string_lossy());
+                handle_error(err, false);
+                error_files += 1;
             }
-        } else {
-            log_success!("Successfully encrypted {:?}", file_name);
         }
     }
 
@@ -108,42 +81,15 @@ pub fn handle_unbox(g_args: &ArgMatches, args: &ArgMatches) -> (u32, u32) {
             true => path.as_os_str().to_os_string(),
             false => path.file_name().unwrap_or(OsStr::new("<unknown file name>")).to_os_string()
         };
-        log_success!("Decrypting {:?}", file_name);
 
-        if let Err(err) = crate::decrypt(&password, path.as_path(), &mut options) {
-            match err {
-                Error::ProfileError(_) => {
-                    log_error!("{}", err);
-                    log_error!("New profile can be created with \"lockbox profile new\"");
-                    exit(1);
-                },
-                Error::AuthError(_) => {
-                    log_error!("{}", err);
-                    log_error!("Please try again");
-                    exit(1);
-                },
-                Error::IOError(_) => {
-                    log_error!("Unable to access {:?}: {}", file_name, err);
-                    error_files += 1;
-                },
-                Error::CipherError(_) => {
-                    log_error!("{}", err);
-                    error_files += 1;
-                },
-                Error::InvalidData(_) => {
-                    log_error!("Invalid file data in {:?}: {}", file_name, err);
-                    error_files += 1;
-                },
-                Error::InvalidInput(_) => {
-                    log_warn!("Skipping {:?}: {}", file_name, err);
-                },
-                _ => {
-                    log_error!("{}", err);
-                    exit(1);
-                }
+        log_info!("Decrypting {:?}", file_name);
+        match crate::decrypt(&password, path.as_path(), &mut options) {
+            Ok(_) => log_success!("Successfully decrypted {:?}", path.file_name().unwrap().to_os_string()),
+            Err(err) => {
+                log_error!("Unable to encrypt \"{}\"", file_name.to_string_lossy());
+                handle_error(err, false);
+                error_files += 1;
             }
-        } else {
-            log_success!("Successfully decrypted {:?}", path.file_name().unwrap().to_os_string());
         }
     }
 
@@ -158,11 +104,12 @@ pub fn handle_profile_create(g_args: &ArgMatches, args: &ArgMatches) {
 
     let name = args.get_one::<String>("NAME").expect("Profile name is required");
 
-    if let Err(err) = crate::create_profile(&password, name) {
-        log_error!("Unable to create a new profile: {}", err);
-        exit(1);
-    } else {
-        log_success!("Successfully created new profile \"{}\"", name);
+    match crate::create_profile(&password, name) {
+        Ok(_) => log_success!("Successfully created new profile \"{}\"", name),
+        Err(err) => {
+            log_error!("Unable to create a new profile named \"{}\"", name);
+            handle_error(err, true);
+        }
     }
 }
 
@@ -174,25 +121,12 @@ pub fn handle_profile_delete(g_args: &ArgMatches, args: &ArgMatches) {
         Some(password) => password.to_string()
     };
 
-    if let Err(err) = crate::delete_profile(&password, name) {
-        match err {
-            Error::ProfileError(_) => {
-                log_error!("{}", err);
-                log_error!("New profile can be created with \"lockbox profile new\"");
-                exit(1);
-            },
-            Error::AuthError(_) => {
-                log_error!("{}", err);
-                log_error!("Please try again");
-                exit(1);
-            },
-            _ => {
-                log_error!("Unable to delete the profile: {}", err);
-                exit(1);
-            }
+    match crate::delete_profile(&password, name) {
+        Ok(_) => log_success!("Successfully deleted profile \"{}\"", name),
+        Err(err) => {
+            log_error!("Unable to delete profile \"{}\"", name);
+            handle_error(err, true);
         }
-    } else {
-        log_success!("Successfully deleted profile \"{}\"", name);
     }
 }
 
@@ -204,77 +138,43 @@ pub fn handle_profile_set(g_args: &ArgMatches, args: &ArgMatches) {
         Some(password) => password.to_string()
     };
 
-    if let Err(err) = crate::select_profile(&password, name) {
-        match err {
-            Error::ProfileError(_) => {
-                log_error!("{}", err);
-                log_error!("New profile can be created with \"lockbox profile new\"");
-                exit(1);
-            },
-            Error::AuthError(_) => {
-                log_error!("{}", err);
-                log_error!("Please try again");
-                exit(1);
-            },
-            Error::InvalidInput(_) => {
-                log_success!("Profile is already set to \"{}\"", name);
-            }
-            _ => {
-                log_error!("Unable to set the profile: {}", err);
-                exit(1);
-            }
+    match crate::select_profile(&password, name) {
+        Ok(_) => log_success!("Successfully set current profile to \"{}\"", name),
+        Err(err) => {
+            log_error!("Unable to switch to profile \"{}\"", name);
+            handle_error(err, true);
         }
-    } else {
-        log_success!("Successfully set profile to \"{}\"", name);
     }
 }
 
 pub fn handle_profile_get(_g_args: &ArgMatches, _args: &ArgMatches) {
-    let profile_name = crate::get_profile();
-    if let Err(err) = profile_name {
-        match err {
-            Error::ProfileError(_) => {
-                log_error!("{}", err);
-                log_error!("New profile can be created with \"lockbox profile new\"");
-                exit(1);
-            },
-            _ => {
-                log_error!("Unable to list profiles: {}", err);
-                exit(1);
-            }
+    match crate::get_profile() {
+        Ok(name) => log_success!("Currently selected profile: {}", name),
+        Err(err) => {
+            log_error!("Unable to get currently selected profile");
+            handle_error(err, true);
         }
-    } else {
-        log_success!("Currently selected profile: {}", profile_name.unwrap());
     }
 }
 
 pub fn handle_profile_list(_g_args: &ArgMatches, _args: &ArgMatches) {
     let profiles = crate::get_profiles();
-    if let Err(err) = profiles {
-        match err {
-            Error::ProfileError(_) => {
-                log_error!("{}", err);
-                log_error!("New profile can be created with \"lockbox profile new\"");
-                exit(1);
-            },
-            _ => {
-                log_error!("Unable to list profiles: {}", err);
-                exit(1);
-            }
-        }
-    }
 
-    let profiles = profiles.unwrap();
+    let profiles = profiles.unwrap_or_else(|err| {
+        log_error!("Unable to get a list of all profiles");
+        handle_error(err, false);
+        vec![]
+    });
     let count = profiles.len();
 
     if count == 0 {
-        log_success!("No profiles found");
-        log_success!("New profile can be created with \"lockbox profile new\"");
+        log_warn!("No profiles found");
+        log_warn!("New profile can be created with \"lockbox profile new\"");
     } else {
         if count > 1 {log_success!("There are {} profiles found:", count);}
         else {log_success!("There is {} profile found:", count);}
         for name in profiles {
-            println!("    - {}", name)
+            println!("\t- {}", name)
         }
     }
 }
@@ -285,25 +185,12 @@ pub fn handle_key_new(g_args: &ArgMatches, _args: &ArgMatches) {
         Some(password) => password.to_string()
     };
 
-    if let Err(err) = crate::new_key(&password) {
-        match err {
-            Error::ProfileError(_) => {
-                log_error!("{}", err);
-                log_error!("New profile can be created with \"lockbox profile new\"");
-                exit(1);
-            },
-            Error::AuthError(_) => {
-                log_error!("{}", err);
-                log_error!("Please try again");
-                exit(1);
-            },
-            _ => {
-                log_error!("Unable to generate new encryption key: {}", err);
-                exit(1);
-            }
+    match crate::new_key(&password) {
+        Ok(_) => log_success!("Successfully generated new encryption key for the current profile"),
+        Err(err) => {
+            log_error!("Unable to generate a new encryption key");
+            handle_error(err, true);
         }
-    } else {
-        log_success!("Successfully generated new encryption key for the current profile");
     }
 }
 
@@ -317,27 +204,15 @@ pub fn handle_key_get(g_args: &ArgMatches, args: &ArgMatches) {
         byte_format: args.get_flag("BYTE-FORMAT"),
     };
 
-    let key = crate::get_key(&password, options);
-    if let Err(err) = &key {
-        match err {
-            Error::ProfileError(_) => {
-                log_error!("{}", err);
-                log_error!("New profile can be created with \"lockbox profile new\"");
-                exit(1);
-            },
-            Error::AuthError(_) => {
-                log_error!("{}", err);
-                log_error!("Please try again");
-                exit(1);
-            },
-            _ => {
-                log_error!("Unable to get the key: {}", err);
-                exit(1);
-            }
+    match crate::get_key(&password, options) {
+        Ok(key) => {
+            // TODO: add current profile name
+            log_success!("Encryption key for the current profile:\n    {}", key);
         }
-    } else {
-        // TODO: add current profile name
-        log_success!("Encryption key for the current profile:\n    {}", key.unwrap());
+        Err(err) => {
+            log_error!("Unable to get an encryption key for the current profile");
+            handle_error(err, true);
+        }
     }
 }
 
@@ -349,30 +224,12 @@ pub fn handle_key_set(g_args: &ArgMatches, args: &ArgMatches) {
 
 	let new_key = args.get_one::<String>("KEY").expect("Key is required");
 
-    let key = crate::set_key(&password, &new_key);
-    if let Err(err) = &key {
-        match err {
-            Error::ProfileError(_) => {
-                log_error!("{}", err);
-                log_error!("New profile can be created with \"lockbox profile new\"");
-                exit(1);
-            },
-            Error::AuthError(_) => {
-                log_error!("{}", err);
-                log_error!("Please try again");
-                exit(1);
-            },
-			Error::InvalidInput(_) => {
-				log_error!("Invalid key provided: {}", err);
-                exit(1);
-			},
-            _ => {
-                log_error!("Unable to set a new key: {}", err);
-                exit(1);
-            }
+    match crate::set_key(&password, &new_key) {
+        Ok(_) => log_success!("Successfully set a new encryption key for the current profile"),
+        Err(err) => {
+            log_error!("Unable to set an encryption key for the current profile");
+            handle_error(err, true);
         }
-    } else {
-        log_success!("Successfully set a new encryption key for the current profile");
     }
 }
 
@@ -397,4 +254,26 @@ fn get_path_deque(args: &ArgMatches, arg_id: &str) -> Option<VecDeque<PathBuf>> 
         return Some(deque)
     }
     None
+}
+
+/// Handles the error and acts according to each error
+fn handle_error(err: Error, always_exit: bool) {
+    log_error!("{}", err);
+    match &err {
+        Error::ProfileError(kind) => {
+            if let ProfileErrorKind::AuthenticationFailed = kind {
+                log_warn!("Try again or use a different profile")
+            } else {
+                log_warn!("New profile can be created with \"lockbox profile new\"");
+            }
+        },
+        Error::ConfigError(_) => {
+            log_warn!("Please check the config file for any mistakes and try again");
+        }
+        _ => {}
+    }
+
+    if always_exit || err.should_exit() {
+        exit(err.exit_code());
+    }
 }

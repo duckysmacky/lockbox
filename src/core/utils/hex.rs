@@ -1,6 +1,7 @@
 //! Contains HEX manipulation functions for parsing custom types
 
 use crate::{Result, Error, Key};
+use crate::core::error::InvalidDataErrorKind;
 
 /// Transforms `Key` type into HEX string
 /// (e.g. \[1, 40, 174, 16, 5, ...\] into "0128AE1005...")
@@ -13,26 +14,31 @@ pub fn key_to_hex_string(key: Key) -> String {
     res
 }
 
-/// Transforms HEx string into `Key` type
+/// Transforms a hex string into `Key` type
 /// (e.g. "0128AE1005..." into \[1, 40, 174, 16, 5, ...\])
 pub fn hex_string_to_key(hex: String) -> Result<Key> {
     let mut res: Key = [0; 32];
     let safe_chars: &str = "0123456789ABCDEF";
+    
     if hex.len() != 64 {
-        return Err(Error::InvalidInput("Hex string has invalid length".to_string()));
+        return Err(Error::InvalidData(InvalidDataErrorKind::InvalidHexNumber("Invalid length".to_string())))
     }
+    
     let mut i: usize = 0;
     while i < hex.len() {
         // we can just unwrap this since the length is guaranteed to be fine
         let c1: char = hex.chars().nth(i).unwrap();
         let c2: char = hex.chars().nth(i + 1).unwrap();
+        
         if !safe_chars.contains(c1) || !safe_chars.contains(c2) {
-            return Err(Error::InvalidInput(format!("Invalid byte \"{}{}\" in hex string", c1, c2)));
+            return Err(Error::InvalidData(InvalidDataErrorKind::InvalidHexNumber(format!("Invalid byte \"{}{}\"", c1, c2))))
         }
+        
         // we can just unwrap this too since we sanity-checked the characters beforehand
         res[i / 2] = u8::from_str_radix(&format!("{}{}", c1, c2), 16).unwrap();
 
         i += 2;
     }
+    
     Ok(res)
 }

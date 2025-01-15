@@ -2,8 +2,9 @@
 
 use std::fs;
 use std::path::{Path, PathBuf};
-use crate::{Error, Result};
+use crate::{log_warn, Error, Result};
 use crate::core::data;
+use crate::core::error::{InvalidDataErrorKind, ProfileErrorKind};
 use crate::options;
 use crate::log_debug;
 use super::data::{io, keys};
@@ -16,16 +17,16 @@ pub mod checksum;
 /// and get access to current profile. Additional options can be supplied to change the encryption
 /// process
 pub fn encrypt(password: &str, input_path: &Path, opts: &mut options::EncryptionOptions) -> Result<()> {
-    let mut profiles = data::get_profiles();
+    let mut profiles = data::get_profiles()?;
     let profile = profiles.get_current_profile()?;
 
     if !profile.verify_password(password) {
-        return Err(Error::AuthError("Invalid password entered".to_string()))
+        return Err(Error::ProfileError(ProfileErrorKind::AuthenticationFailed))
     }
 
     if let Some(extension) = input_path.extension() {
         if extension == "box" {
-            return Err(Error::InvalidInput("This file is already encrypted".to_string()))
+            return Err(Error::InvalidData(InvalidDataErrorKind::FileAlreadyEncrypted(input_path.file_name().unwrap().to_os_string())))
         }
     }
 
@@ -68,19 +69,19 @@ pub fn encrypt(password: &str, input_path: &Path, opts: &mut options::Encryption
 /// verify and get access to current profile. Additional options can be supplied to change the
 /// decryption process
 pub fn decrypt(password: &str, input_path: &Path, opts: &mut options::DecryptionOptions) -> Result<()> {
-    let mut profiles = data::get_profiles();
+    let mut profiles = data::get_profiles()?;
     let profile = profiles.get_current_profile()?;
 
     if !profile.verify_password(password) {
-        return Err(Error::AuthError("Invalid password entered".to_string()))
+        return Err(Error::ProfileError(ProfileErrorKind::AuthenticationFailed))
     }
 
     if let Some(extension) = input_path.extension() {
         if extension != "box" {
-            return Err(Error::InvalidInput("This file is not encrypted".to_string()))
+            return Err(Error::InvalidData(InvalidDataErrorKind::FileNotEncrypted(input_path.file_name().unwrap().to_os_string())))
         }
     } else {
-        return Err(Error::InvalidInput("This file is not encrypted".to_string()))
+        return Err(Error::InvalidData(InvalidDataErrorKind::FileNotEncrypted(input_path.file_name().unwrap().to_os_string())))
     }
 
     let mut path_buffer = PathBuf::from(input_path);
@@ -94,7 +95,7 @@ pub fn decrypt(password: &str, input_path: &Path, opts: &mut options::Decryption
     log_debug!("Validating checksum");
     let new_checksum = checksum::generate_checksum(&body);
     if new_checksum != header.checksum {
-        return Err(Error::InvalidData("Checksum verification failed (data was probably tampered with)".to_string()));
+        log_warn!("Checksum verification failed. Data seems to be tampered with");
     }
 
     fs::remove_file(file_path)?;
@@ -119,7 +120,7 @@ pub fn decrypt(password: &str, input_path: &Path, opts: &mut options::Decryption
     }
 
     let file_path = path_buffer.as_path();
-    io::write_bytes(&file_path, &body, true).map_err(Error::from)?;
+    io::write_bytes(&file_path, &body, true)?;
 
     Ok(())
 }

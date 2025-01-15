@@ -83,7 +83,7 @@ pub fn decrypt(password: &str, input_path: &std::path::Path, opts: &mut options:
 /// * `CipherError` - unsuccessful attempt to hash the password
 pub fn create_profile(password: &str, profile_name: &str) -> Result<()> {
     log_info!("Creating a new profile with name \"{}\"", profile_name);
-    let mut profiles = self::core::data::get_profiles();
+    let mut profiles = core::data::get_profiles()?;
     profiles.new_profile(Profile::new(profile_name, password)?)?;
     Ok(())
 }
@@ -100,11 +100,11 @@ pub fn create_profile(password: &str, profile_name: &str) -> Result<()> {
 /// * `ProfileError` - if the target profile is not found
 /// * `IOError` - in case of failing to access or write to a `profiles.json` file
 pub fn delete_profile(password: &str, profile_name: &str) -> Result<()> {
-    let mut profiles = self::core::data::get_profiles();
+    let mut profiles = core::data::get_profiles()?;
     let profile = profiles.get_current_profile()?;
 
     if !profile.verify_password(password) {
-        return Err(Error::AuthError("Invalid password entered".to_string()))
+        return Err(Error::ProfileError(core::error::ProfileErrorKind::AuthenticationFailed));
     }
 
     log_info!("Deleting profile \"{}\"", profile_name);
@@ -124,16 +124,16 @@ pub fn delete_profile(password: &str, profile_name: &str) -> Result<()> {
 /// * `ProfileError` - if the target profile is not found
 /// * `IOError` - in case of failing to access or write to a `profiles.json` file
 pub fn select_profile(password: &str, profile_name: &str) -> Result<()> {
-    let mut profiles = self::core::data::get_profiles();
+    let mut profiles = core::data::get_profiles()?;
     let profile = profiles.find_profile(profile_name)?;
 
     if !profile.verify_password(password) {
-        return Err(Error::AuthError("Invalid password entered".to_string()))
+        return Err(Error::ProfileError(core::error::ProfileErrorKind::AuthenticationFailed));
     }
 
     if let Ok(profile) = profiles.get_current_profile() {
         if profile_name == profile.name {
-            return Err(Error::ProfileError(format!("Current profile is already set to \"{}\"", profile_name)))
+            return Err(Error::ProfileError(core::error::ProfileErrorKind::AlreadySelected(profile_name.to_string())));
         }
     }
 
@@ -153,7 +153,7 @@ pub fn select_profile(password: &str, profile_name: &str) -> Result<()> {
 /// * `IOError` - in case of failing to access or write to a `profiles.json` file
 pub fn get_profile() -> Result<String> {
     log_info!("Getting current profile");
-    let mut profiles = self::core::data::get_profiles();
+    let mut profiles = core::data::get_profiles()?;
     let profile = profiles.get_current_profile()?;
     Ok(profile.name.to_string())
 }
@@ -170,7 +170,7 @@ pub fn get_profile() -> Result<String> {
 pub fn get_profiles() -> Result<Vec<String>> {
     log_info!("Listing all available profiles");
 
-    let profiles = self::core::data::get_profiles();
+    let profiles = core::data::get_profiles()?;
     let profile_list = profiles.get_profiles().into_iter()
         .map(|p| p.name.to_string())
         .collect::<Vec<String>>();
@@ -191,11 +191,11 @@ pub fn get_profiles() -> Result<Vec<String>> {
 /// * `ProfileError` - if there is no current profile or no profiles found in general
 /// * `IOError` - in case of failing to access or write to a `profiles.json` file
 pub fn new_key(password: &str) -> Result<()> {
-    let mut profiles = self::core::data::get_profiles();
+    let mut profiles = core::data::get_profiles()?;
     let profile = profiles.get_current_profile()?;
     
     if !profile.verify_password(password) {
-        return Err(Error::AuthError("Invalid password entered".to_string()))
+        return Err(Error::ProfileError(core::error::ProfileErrorKind::AuthenticationFailed));
     }
 
     log_info!("Generating a new encryption key for current profile");
@@ -214,11 +214,11 @@ pub fn new_key(password: &str) -> Result<()> {
 /// * `ProfileError` - if there is no current profile or no profiles found in general
 /// * `IOError` - in case of failing to access or write to a `profiles.json` file
 pub fn get_key(password: &str, opts: options::GetKeyOptions) -> Result<String> {
-    let mut profiles = self::core::data::get_profiles();
+    let mut profiles = core::data::get_profiles()?;
     let profile = profiles.get_current_profile()?;
     
     if !profile.verify_password(password) {
-        return Err(Error::AuthError("Invalid password entered".to_string()))
+        return Err(Error::ProfileError(core::error::ProfileErrorKind::AuthenticationFailed));
     }
 
     log_info!("Retrieving the encryption key from the current profile");
@@ -226,6 +226,7 @@ pub fn get_key(password: &str, opts: options::GetKeyOptions) -> Result<String> {
     if !opts.byte_format {
         return Ok(utils::hex::key_to_hex_string(key));
     }
+    
     Ok(format!("{:?}", key))
 }
 
@@ -243,11 +244,11 @@ pub fn get_key(password: &str, opts: options::GetKeyOptions) -> Result<String> {
 /// * `ProfileError` - if there is no current profile or no profiles found in general
 /// * `IOError` - in case of failing to access or write to a `profiles.json` file
 pub fn set_key(password: &str, new_key: &str) -> Result<()> {
-    let mut profiles = self::core::data::get_profiles();
+    let mut profiles = core::data::get_profiles()?;
     let profile = profiles.get_current_profile()?;
 
     if !profile.verify_password(password) {
-        return Err(Error::AuthError("Invalid password entered".to_string()))
+        return Err(Error::ProfileError(core::error::ProfileErrorKind::AuthenticationFailed));
     }
 
     log_info!("Setting the encryption key from the current profile");

@@ -11,9 +11,8 @@ use std::io;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use crate::core::data::io::{read_file, write_file};
-use crate::core::data::os;
 use crate::{log_debug, log_info};
-use crate::core::error::{Result, Error};
+use crate::core::error::Result;
 
 /// Name of the main configuration file
 const CONFIG_FILE_NAME: &str = "lockbox.toml";
@@ -43,15 +42,13 @@ pub struct StorageConfig { }
 impl LockboxConfig {
     /// Imports self from the stored "config.toml" file. In case of the file missing, generates a
     /// new file with the default configuration
-    pub fn import() -> Result<Self> {
+    pub fn import(config_directory: PathBuf) -> Result<Self> {
         log_debug!("Importing Lockbox config");
-        let config_directory = os::get_config_dir()?;
         let config_file = config_directory.join(CONFIG_FILE_NAME);
 
         let config = match read_file(&config_file) {
             Ok(file_data) => {
-                let mut config: LockboxConfig = toml::from_str(&file_data)
-                    .map_err(|err| Error::SerializeError(err.to_string()))?;
+                let mut config: LockboxConfig = toml::from_str(&file_data)?;
                 config.file_path = config_file;
                 config
             },
@@ -84,8 +81,7 @@ impl LockboxConfig {
     #[allow(dead_code)]
     pub fn save(&self) -> Result<()> {
         log_debug!("Saving configuration data to \"config.toml\"");
-        let toml_data = toml::to_string(&self)
-            .map_err(|err| Error::SerializeError(err.to_string()))?;
+        let toml_data = toml::to_string(&self)?;
 
         write_file(&self.file_path, &toml_data, true)?;
         Ok(())
@@ -94,6 +90,7 @@ impl LockboxConfig {
 
 #[cfg(test)]
 mod tests {
+    use crate::core::data::os;
     use super::*;
 
     #[test]
@@ -101,7 +98,8 @@ mod tests {
     /// Creates the `config.toml` file in the program configuration directory and writes the
     /// default configuration to it
     fn write_default_config() {
-        let config = LockboxConfig::import();
+        let config_directory = os::get_config_dir().expect("Cannot get config directory");
+        let config = LockboxConfig::import(config_directory);
 
         assert!(config.is_ok())
     }

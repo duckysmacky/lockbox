@@ -22,3 +22,4 @@ uuid = { version = "1.9.1", features = ["v4", "fast-rng"] }
 lazy_static = "1.5.0"
 rust-argon2 = "2.1.0"
 toml = "0.8.19"
+log = "0.4.25"

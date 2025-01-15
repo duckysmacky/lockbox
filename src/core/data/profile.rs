@@ -5,17 +5,17 @@
 //! default data directory. 
 //! 
 //! Also contains a `Profile` struct which is used for storing information
-//! about particular user profile. Each profile consists of unique name, password and key with it's
+//! about particular user profile. Each profile consists of unique name, password and key with its
 //! main goal is to hold the stated encryption key. There can be many profiles created at the same
-//! time, but each has to have an unique name. `Key` is generated with the creation of the profile
+//! time, but each has to have a unique name. `Key` is generated with the creation of the profile
 //! which it belongs to. Password is also hashed automatically on creation and stored in that form
 //! on the disk
 
 use super::auth;
 use super::io::{read_file, write_file};
-use crate::core::data::os;
 use crate::core::encryption::cipher;
 use crate::{log_debug, log_info, Error, Key, Result};
+use crate::core::error::ProfileErrorKind;
 use serde::{Deserialize, Serialize};
 use std::io::{self};
 use std::path::PathBuf;
@@ -35,11 +35,10 @@ pub struct LockboxProfiles {
 
 /// Object-driven approach
 impl LockboxProfiles {
-    /// Imports self from the stored "profiles.json" file. In case of the file missing, generates a
-    /// new object with default empty values
-    pub fn import() -> Result<Self> {
+    /// Imports self from the stored "profiles.json" file in the program's data directory. In case
+    /// of the file missing, generates a new object with default empty values
+    pub fn import(data_directory: PathBuf) -> Result<Self> {
         log_debug!("Importing Lockbox profiles");
-        let data_directory = os::get_data_dir()?;
         let profiles_file = data_directory.join(PROFILES_FILE_NAME);
 
         let profiles = match read_file(&profiles_file) {
@@ -78,7 +77,7 @@ impl LockboxProfiles {
         let current_profile = self.current_profile.clone();
 
         let profile = match current_profile {
-            None => return Err(Error::ProfileError("No profile is currently selected".to_string())),
+            None => return Err(Error::ProfileError(ProfileErrorKind::NotSelected)),
             Some(profile_name) => {
                 self.find_profile(&profile_name)?
             }
@@ -124,7 +123,7 @@ impl LockboxProfiles {
             }
         }
 
-        Err(Error::ProfileError(format!("Profile with name \"{}\" doesn\'t exist", profile_name)))
+        Err(Error::ProfileError(ProfileErrorKind::NotFound(profile_name.to_string())))
     }
 
     /// Saves provided profile data to profiles file. Updates existing profile or creates a new one,
@@ -163,7 +162,7 @@ impl LockboxProfiles {
 
         let profile_name = profile.name.clone();
         if self.find_profile(&profile_name).is_ok() {
-            return Err(Error::ProfileError(format!("Profile with name \"{}\" already exists", profile_name)));
+            return Err(Error::ProfileError(ProfileErrorKind::AlreadyExists(profile_name)));
         }
         self.profiles.push(profile);
 
@@ -181,7 +180,7 @@ impl LockboxProfiles {
             }
         }
 
-        Err(Error::ProfileError(format!("Profile with name \"{}\" doesn\'t exist", profile_name)))
+        Err(Error::ProfileError(ProfileErrorKind::NotFound(profile_name.to_string())))
     }
 
     /// Writes to the profile data file. Overwrites old data
@@ -228,6 +227,7 @@ impl Profile {
 
 #[cfg(test)]
 mod tests {
+    use crate::core::data::os;
     use super::*;
 
     #[test]
@@ -235,7 +235,8 @@ mod tests {
     /// Creates the `profiles.json` file in the program data directory and fills it with default
     /// information
     fn write_default_profiles() {
-        let config = LockboxProfiles::import();
+        let data_directory = os::get_data_dir().expect("Cannot get data directory");
+        let config = LockboxProfiles::import(data_directory);
 
         assert!(config.is_ok())
     }
