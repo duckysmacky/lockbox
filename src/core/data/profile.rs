@@ -14,8 +14,7 @@
 use super::auth;
 use super::io::{read_file, write_file};
 use crate::core::encryption::cipher;
-use crate::{log_debug, log_info, Error, Key, Result};
-use crate::core::error::ProfileErrorKind;
+use crate::{log_debug, log_info, new_err, Key, Result};
 use serde::{Deserialize, Serialize};
 use std::io::{self};
 use std::path::PathBuf;
@@ -77,7 +76,7 @@ impl LockboxProfiles {
         let current_profile = self.current_profile.clone();
 
         let profile = match current_profile {
-            None => return Err(Error::ProfileError(ProfileErrorKind::NotSelected)),
+            None => return Err(new_err!(ProfileError: NotSelected)),
             Some(profile_name) => {
                 self.find_profile(&profile_name)?
             }
@@ -123,7 +122,7 @@ impl LockboxProfiles {
             }
         }
 
-        Err(Error::ProfileError(ProfileErrorKind::NotFound(profile_name.to_string())))
+        Err(new_err!(ProfileError: NotFound, profile_name))
     }
 
     /// Saves provided profile data to profiles file. Updates existing profile or creates a new one,
@@ -162,7 +161,7 @@ impl LockboxProfiles {
 
         let profile_name = profile.name.clone();
         if self.find_profile(&profile_name).is_ok() {
-            return Err(Error::ProfileError(ProfileErrorKind::AlreadyExists(profile_name)));
+            return Err(new_err!(ProfileError: AlreadyExists, profile_name));
         }
         self.profiles.push(profile);
 
@@ -180,7 +179,7 @@ impl LockboxProfiles {
             }
         }
 
-        Err(Error::ProfileError(ProfileErrorKind::NotFound(profile_name.to_string())))
+        Err(new_err!(ProfileError: NotFound, profile_name))
     }
 
     /// Writes to the profile data file. Overwrites old data

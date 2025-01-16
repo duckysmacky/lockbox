@@ -4,8 +4,7 @@
 use std::fs::{self, File};
 use std::io::{Read, Write};
 use std::path::Path;
-use crate::{Result, Error};
-use crate::core::error::SerializeErrorKind;
+use crate::{Result, new_err};
 use super::{BoxFile, BoxHeader};
 
 /// Reads the `.box` file at the provided file and returns parsed information
@@ -17,7 +16,7 @@ pub fn parse_file(path: &Path) -> Result<BoxFile> {
     file.read(&mut buffer)?;
 
     let box_file: BoxFile = bincode::deserialize(&buffer)
-        .map_err(|err| Error::SerializeError(SerializeErrorKind::BOXParseError(err.to_string())))?;
+        .map_err(|err| new_err!(SerializeError: BOXParseError, err))?;
     Ok(box_file)
 }
 
@@ -27,7 +26,7 @@ pub fn write_file(path: &Path, header: BoxHeader, body: Vec<u8>) -> Result<()> {
 
     let box_file = BoxFile {header, body};
     let box_data = bincode::serialize(&box_file)
-        .map_err(|err| Error::SerializeError(SerializeErrorKind::BOXParseError(err.to_string())))?;
+        .map_err(|err| new_err!(SerializeError: BOXParseError, err))?;
 
     file.write_all(&box_data)?;
 

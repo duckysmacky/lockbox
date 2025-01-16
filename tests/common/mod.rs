@@ -15,13 +15,13 @@ pub const TEST_DIR: &str = "files/test";
 pub fn setup() {
     lockbox::create_profile(PASSWORD, PROFILE_NAME)
         .unwrap_or_else(|err| match err {
-            Error::ProfileError(_) => {},
+            Error::ProfileError(_) => println!("{}", err),
             _ => panic!("Unable to create test profile: {}", err)
         });
 
     lockbox::select_profile(PASSWORD, PROFILE_NAME)
         .unwrap_or_else(|err| match err {
-            Error::ProfileError(e) => println!("{}", e),
+            Error::ProfileError(_) => println!("{}", err),
             _ => panic!("Unable to select test profile: {}", err)
         });
 
@@ -33,7 +33,7 @@ pub fn setup() {
 pub fn cleanup() {
     lockbox::delete_profile(PASSWORD, PROFILE_NAME)
         .unwrap_or_else(|err| match err {
-            Error::ProfileError(_) => {},
+            Error::ProfileError(_) => println!("{}", err),
             _ => panic!("Unable to delete test profile: {}", err)
         });
 

@@ -2,9 +2,8 @@
 
 use std::fs;
 use std::path::{Path, PathBuf};
-use crate::{log_warn, Error, Result};
+use crate::{log_warn, new_err, Result};
 use crate::core::data;
-use crate::core::error::{InvalidDataErrorKind, ProfileErrorKind};
 use crate::options;
 use crate::log_debug;
 use super::data::{io, keys};
@@ -21,12 +20,12 @@ pub fn encrypt(password: &str, input_path: &Path, opts: &mut options::Encryption
     let profile = profiles.get_current_profile()?;
 
     if !profile.verify_password(password) {
-        return Err(Error::ProfileError(ProfileErrorKind::AuthenticationFailed))
+        return Err(new_err!(ProfileError: AuthenticationFailed))
     }
 
     if let Some(extension) = input_path.extension() {
         if extension == "box" {
-            return Err(Error::InvalidDataError(InvalidDataErrorKind::FileAlreadyEncrypted(input_path.file_name().unwrap().to_os_string())))
+            return Err(new_err!(InvalidData: FileAlreadyEncrypted, os input_path.file_name().unwrap()))
         }
     }
 
@@ -73,15 +72,15 @@ pub fn decrypt(password: &str, input_path: &Path, opts: &mut options::Decryption
     let profile = profiles.get_current_profile()?;
 
     if !profile.verify_password(password) {
-        return Err(Error::ProfileError(ProfileErrorKind::AuthenticationFailed))
+        return Err(new_err!(ProfileError: AuthenticationFailed))
     }
 
     if let Some(extension) = input_path.extension() {
         if extension != "box" {
-            return Err(Error::InvalidDataError(InvalidDataErrorKind::FileNotEncrypted(input_path.file_name().unwrap().to_os_string())))
+            return Err(new_err!(InvalidData: FileNotSupported, os input_path.file_name().unwrap()))
         }
     } else {
-        return Err(Error::InvalidDataError(InvalidDataErrorKind::FileNotEncrypted(input_path.file_name().unwrap().to_os_string())))
+        return Err(new_err!(InvalidData: FileNotSupported, os input_path.file_name().unwrap()))
     }
 
     let mut path_buffer = PathBuf::from(input_path);

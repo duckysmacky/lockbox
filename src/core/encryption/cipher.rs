@@ -2,8 +2,7 @@
 
 use chacha20poly1305::{aead::{Aead, KeyInit}, AeadCore, ChaCha20Poly1305};
 use rand::rngs::OsRng;
-use crate::{Error, Key, Nonce, Result};
-use crate::core::error::EncryptionErrorKind;
+use crate::{new_err, Key, Nonce, Result};
 
 /// Generates a new random 32-byte encryption key
 pub fn generate_key() -> Key {
@@ -21,7 +20,7 @@ pub fn encrypt(key: &Key, nonce: &Nonce, data: &[u8]) -> Result<Vec<u8>> {
     let cipher = ChaCha20Poly1305::new(key.into());
 
     let ciphertext = cipher.encrypt(nonce.into(), data)
-        .map_err(|err| Error::EncryptionError(EncryptionErrorKind::DataEncryptionError(err.to_string())))?;
+        .map_err(|err| new_err!(EncryptionError: CipherError, err))?;
     Ok(ciphertext)
 }
 
@@ -32,6 +31,6 @@ pub fn decrypt(key: &Key, nonce: &Nonce, data: &[u8]) -> Result<Vec<u8>> {
     let cipher = ChaCha20Poly1305::new(key.into());
 
     let plaintext = cipher.decrypt(nonce.into(), data)
-        .map_err(|err| Error::EncryptionError(EncryptionErrorKind::DataDecryptionError(err.to_string())))?;
+        .map_err(|err| new_err!(EncryptionError: CipherError, err))?;
     Ok(plaintext)
 }

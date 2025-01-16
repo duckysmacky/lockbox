@@ -7,11 +7,16 @@ use std::path::PathBuf;
 use super::PASSWORD;
 
 fn base_command() -> Command {
-    if cfg!(target_os = "windows") {
-        Command::new("target/debug/lockbox.exe")
-    } else { 
-        Command::new("target/debug/lockbox")
-    }
+    let mut executable_path = PathBuf::from("target/debug");
+    executable_path.push({
+        if cfg!(target_os = "windows") {
+            "lockbox.exe"
+        } else {
+            "lockbox"
+        }
+    });
+    
+    Command::new(executable_path)
 }
 
 pub fn run_box(path: &PathBuf, extra_args: &[&str]) -> Output {

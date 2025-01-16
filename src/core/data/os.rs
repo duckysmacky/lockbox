@@ -3,8 +3,7 @@
 
 use std::path::PathBuf;
 use std::{env, fs};
-use crate::{Error, Result};
-use crate::core::error::OSErrorKind;
+use crate::{new_err, Result};
 
 /// Returns the application data directory based on the OS. Used for storing profiles and other
 /// information for program's functionality which is not meant to be edited by the user
@@ -44,7 +43,7 @@ pub fn get_config_dir() -> Result<PathBuf> {
     Ok(config_dir)
 }
 
-/// Returns the "Home" environment variable based on the OS for later file storage. For windows it
+/// Returns the "Home" environment variable based on the OS for later file storage. For windows, it
 /// is $APPDATA, for others it is $HOME
 fn get_env_home() -> Result<PathBuf> {
     let env = {
@@ -56,7 +55,7 @@ fn get_env_home() -> Result<PathBuf> {
     };
     
     let home_path = env::var(env)
-        .map_err(|_| Error::OSError(OSErrorKind::EnvVariableUnavailable(env.to_string())))?;
+        .map_err(|_| new_err!(OSError: EnvVariableUnavailable, env))?;
 
     let config_dir = PathBuf::from(home_path);
     Ok(config_dir)

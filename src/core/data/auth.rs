@@ -1,7 +1,6 @@
 //! Contains functions related to user authentication and password
 
-use crate::{Result, Error};
-use crate::core::error::EncryptionErrorKind;
+use crate::{Result, new_err};
 use argon2::{self, Config};
 use rand::random;
 
@@ -10,7 +9,7 @@ pub fn hash_password(password: &str) -> Result<(String, [u8; 16])> {
     let salt: [u8; 16] = random();
     let config = Config::default();
     let hashed_password = argon2::hash_encoded(password.as_bytes(), &salt, &config)
-        .map_err(|err| Error::EncryptionError(EncryptionErrorKind::HashError(err.to_string())))?;
+        .map_err(|err| new_err!(EncryptionError: HashError, err))?;
     Ok((hashed_password, salt))
 }
 
