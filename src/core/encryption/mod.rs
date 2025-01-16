@@ -26,7 +26,7 @@ pub fn encrypt(password: &str, input_path: &Path, opts: &mut options::Encryption
 
     if let Some(extension) = input_path.extension() {
         if extension == "box" {
-            return Err(Error::InvalidData(InvalidDataErrorKind::FileAlreadyEncrypted(input_path.file_name().unwrap().to_os_string())))
+            return Err(Error::InvalidDataError(InvalidDataErrorKind::FileAlreadyEncrypted(input_path.file_name().unwrap().to_os_string())))
         }
     }
 
@@ -78,10 +78,10 @@ pub fn decrypt(password: &str, input_path: &Path, opts: &mut options::Decryption
 
     if let Some(extension) = input_path.extension() {
         if extension != "box" {
-            return Err(Error::InvalidData(InvalidDataErrorKind::FileNotEncrypted(input_path.file_name().unwrap().to_os_string())))
+            return Err(Error::InvalidDataError(InvalidDataErrorKind::FileNotEncrypted(input_path.file_name().unwrap().to_os_string())))
         }
     } else {
-        return Err(Error::InvalidData(InvalidDataErrorKind::FileNotEncrypted(input_path.file_name().unwrap().to_os_string())))
+        return Err(Error::InvalidDataError(InvalidDataErrorKind::FileNotEncrypted(input_path.file_name().unwrap().to_os_string())))
     }
 
     let mut path_buffer = PathBuf::from(input_path);

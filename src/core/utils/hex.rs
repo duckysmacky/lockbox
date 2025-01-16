@@ -21,7 +21,7 @@ pub fn hex_string_to_key(hex: String) -> Result<Key> {
     let safe_chars: &str = "0123456789ABCDEF";
     
     if hex.len() != 64 {
-        return Err(Error::InvalidData(InvalidDataErrorKind::InvalidHexNumber("Invalid length".to_string())))
+        return Err(Error::InvalidDataError(InvalidDataErrorKind::InvalidHexNumber("Invalid length".to_string())))
     }
     
     let mut i: usize = 0;
@@ -31,7 +31,7 @@ pub fn hex_string_to_key(hex: String) -> Result<Key> {
         let c2: char = hex.chars().nth(i + 1).unwrap();
         
         if !safe_chars.contains(c1) || !safe_chars.contains(c2) {
-            return Err(Error::InvalidData(InvalidDataErrorKind::InvalidHexNumber(format!("Invalid byte \"{}{}\"", c1, c2))))
+            return Err(Error::InvalidDataError(InvalidDataErrorKind::InvalidHexNumber(format!("Invalid byte \"{}{}\"", c1, c2))))
         }
         
         // we can just unwrap this too since we sanity-checked the characters beforehand
