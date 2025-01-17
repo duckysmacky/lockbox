@@ -12,7 +12,7 @@ pub mod os;
 pub mod io;
 mod auth;
 
-/// Fetches the Lockbox profiles by importing it from the file on the disk. Will return an error in 
+/// Fetches the Lockbox profiles by importing it from the file on the disk. Will return an error in
 /// case of the operation failing
 pub fn get_profiles() -> Result<LockboxProfiles> {
     log_debug!("Getting Lockbox profiles");

@@ -6,8 +6,7 @@
 
 pub use core::error::{Error, Result};
 pub use core::utils;
-use crate::core::data::profile::Profile;
-// TODO: find a way to use the parser in utils without re-importing it
+// TODO: add a way to use the parser in utils without re-importing it
 
 pub mod cli;
 mod core;
@@ -49,10 +48,8 @@ pub mod options {
 /// Most errors can be safely handled without an unsuccessful exit (e.g. file can just be skipped).
 /// Although it is better to exit on errors related with user authentication and profiles, as the
 /// program will simply not work without a user profile
-pub fn encrypt(password: &str, input_path: &std::path::Path, opts: &mut options::EncryptionOptions) -> Result<()> {
-    // TODO: split some code
-    core::encryption::encrypt(password, input_path, opts)?;
-    Ok(())
+pub fn encrypt(password: &str, file_path: &std::path::Path, options: &mut options::EncryptionOptions) -> Result<()> {
+    core::encrypt(password, file_path, options)
 }
 
 /// Decrypts the file at the given path. Extra options can be provided to control the process.
@@ -65,10 +62,8 @@ pub fn encrypt(password: &str, input_path: &std::path::Path, opts: &mut options:
 /// Most errors can be safely handled without an unsuccessful exit (e.g. file can just be skipped).
 /// Although it is better to exit on errors related with user authentication and profiles, as the
 /// program will simply not work without a user profile
-pub fn decrypt(password: &str, input_path: &std::path::Path, opts: &mut options::DecryptionOptions) -> Result<()> {
-    // TODO: split some code
-    core::encryption::decrypt(password, input_path, opts)?;
-    Ok(())
+pub fn decrypt(password: &str, file_path: &std::path::Path, options: &mut options::DecryptionOptions) -> Result<()> {
+    core::decrypt(password, file_path, options)
 }
 
 /// Creates a new profile with the provided password and profile name. Will **not** automatically
@@ -82,10 +77,7 @@ pub fn decrypt(password: &str, input_path: &std::path::Path, opts: &mut options:
 /// * `IOError` - in case of failing to access or write to a `profiles.json` file
 /// * `CipherError` - unsuccessful attempt to hash the password
 pub fn create_profile(password: &str, profile_name: &str) -> Result<()> {
-    log_info!("Creating a new profile with name \"{}\"", profile_name);
-    let mut profiles = core::data::get_profiles()?;
-    profiles.new_profile(Profile::new(profile_name, password)?)?;
-    Ok(())
+    core::create_profile(password, profile_name)
 }
 
 /// Deletes the profile with the corresponding name. After deletion will switch back to the first
@@ -100,16 +92,7 @@ pub fn create_profile(password: &str, profile_name: &str) -> Result<()> {
 /// * `ProfileError` - if the target profile is not found
 /// * `IOError` - in case of failing to access or write to a `profiles.json` file
 pub fn delete_profile(password: &str, profile_name: &str) -> Result<()> {
-    let mut profiles = core::data::get_profiles()?;
-    let profile = profiles.get_current_profile()?;
-
-    if !profile.verify_password(password) {
-        return Err(Error::ProfileError(core::error::ProfileErrorKind::AuthenticationFailed));
-    }
-
-    log_info!("Deleting profile \"{}\"", profile_name);
-    profiles.delete_profile(profile_name)?;
-    Ok(())
+    core::delete_profile(password, profile_name)
 }
 
 /// Select (set as the current) the profile with the corresponding name
@@ -124,22 +107,7 @@ pub fn delete_profile(password: &str, profile_name: &str) -> Result<()> {
 /// * `ProfileError` - if the target profile is not found
 /// * `IOError` - in case of failing to access or write to a `profiles.json` file
 pub fn select_profile(password: &str, profile_name: &str) -> Result<()> {
-    let mut profiles = core::data::get_profiles()?;
-    let profile = profiles.find_profile(profile_name)?;
-
-    if !profile.verify_password(password) {
-        return Err(Error::ProfileError(core::error::ProfileErrorKind::AuthenticationFailed));
-    }
-
-    if let Ok(profile) = profiles.get_current_profile() {
-        if profile_name == profile.name {
-            return Err(Error::ProfileError(core::error::ProfileErrorKind::AlreadySelected(profile_name.to_string())));
-        }
-    }
-
-    log_info!("Switching profile to \"{}\"", profile_name);
-    profiles.set_current(profile_name)?;
-    Ok(())
+    core::select_profile(password, profile_name)
 }
 
 /// Returns the name of the currently selected profile
@@ -152,10 +120,7 @@ pub fn select_profile(password: &str, profile_name: &str) -> Result<()> {
 /// * `ProfileError` - if no profile is currently selected
 /// * `IOError` - in case of failing to access or write to a `profiles.json` file
 pub fn get_profile() -> Result<String> {
-    log_info!("Getting current profile");
-    let mut profiles = core::data::get_profiles()?;
-    let profile = profiles.get_current_profile()?;
-    Ok(profile.name.to_string())
+    core::get_profile()
 }
 
 /// Returns the names of all currently available profiles
@@ -168,13 +133,7 @@ pub fn get_profile() -> Result<String> {
 /// * `ProfileError` - if no profile data is found (no profiles exist)
 /// * `IOError` - in case of failing to access or write to a `profiles.json` file
 pub fn get_profiles() -> Result<Vec<String>> {
-    log_info!("Listing all available profiles");
-
-    let profiles = core::data::get_profiles()?;
-    let profile_list = profiles.get_profiles().into_iter()
-        .map(|p| p.name.to_string())
-        .collect::<Vec<String>>();
-    Ok(profile_list)
+    core::get_profiles()
 }
 
 /// Generates a new encryption key for the current profile
@@ -191,16 +150,7 @@ pub fn get_profiles() -> Result<Vec<String>> {
 /// * `ProfileError` - if there is no current profile or no profiles found in general
 /// * `IOError` - in case of failing to access or write to a `profiles.json` file
 pub fn new_key(password: &str) -> Result<()> {
-    let mut profiles = core::data::get_profiles()?;
-    let profile = profiles.get_current_profile()?;
-    
-    if !profile.verify_password(password) {
-        return Err(Error::ProfileError(core::error::ProfileErrorKind::AuthenticationFailed));
-    }
-
-    log_info!("Generating a new encryption key for current profile");
-    core::data::keys::set_key(core::encryption::cipher::generate_key())?;
-    Ok(())
+    core::new_key(password)
 }
 
 /// Returns the encryption key being used by the current profile in a hex format
@@ -213,21 +163,8 @@ pub fn new_key(password: &str) -> Result<()> {
 /// * `AuthError` - invalid password for the current profile
 /// * `ProfileError` - if there is no current profile or no profiles found in general
 /// * `IOError` - in case of failing to access or write to a `profiles.json` file
-pub fn get_key(password: &str, opts: options::GetKeyOptions) -> Result<String> {
-    let mut profiles = core::data::get_profiles()?;
-    let profile = profiles.get_current_profile()?;
-    
-    if !profile.verify_password(password) {
-        return Err(Error::ProfileError(core::error::ProfileErrorKind::AuthenticationFailed));
-    }
-
-    log_info!("Retrieving the encryption key from the current profile");
-    let key = core::data::keys::get_key()?;
-    if !opts.byte_format {
-        return Ok(utils::hex::key_to_hex_string(key));
-    }
-    
-    Ok(format!("{:?}", key))
+pub fn get_key(password: &str, options: options::GetKeyOptions) -> Result<String> {
+    core::get_key(password, options)
 }
 
 /// Sets a new encryption key for the current profile. The input key has to be a valid 32-byte long
@@ -244,15 +181,5 @@ pub fn get_key(password: &str, opts: options::GetKeyOptions) -> Result<String> {
 /// * `ProfileError` - if there is no current profile or no profiles found in general
 /// * `IOError` - in case of failing to access or write to a `profiles.json` file
 pub fn set_key(password: &str, new_key: &str) -> Result<()> {
-    let mut profiles = core::data::get_profiles()?;
-    let profile = profiles.get_current_profile()?;
-
-    if !profile.verify_password(password) {
-        return Err(Error::ProfileError(core::error::ProfileErrorKind::AuthenticationFailed));
-    }
-
-    log_info!("Setting the encryption key from the current profile");
-    let new_key = utils::hex::hex_string_to_key(new_key.to_string())?;
-    core::data::keys::set_key(new_key)?;
-    Ok(())
+    core::set_key(password, new_key)
 }

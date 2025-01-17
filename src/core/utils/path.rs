@@ -1,8 +1,8 @@
 //! Contains functions for path manipulation
 
-use std::{fs, io, ffi::OsString};
+use std::{ffi::OsString, fs, io};
 use std::path::{Path, PathBuf};
-use crate::core::file::parser;
+use crate::core::encryption::boxfile;
 use crate::{log_info, log_warn};
 
 /// Opens and parses provided path, returning a flattened list of all found paths. Verifies if the
@@ -55,7 +55,7 @@ fn search_for_original(dir_path: &Path, target_name: OsString) -> io::Result<Pat
 
         if !path.is_file() || path.extension().unwrap() != "box" { continue; }
 
-        let original_name = parser::parse_file(path.as_path())
+        let original_name = boxfile::parse_file(path.as_path())
             .map_err(|err| io::Error::new(io::ErrorKind::InvalidData, err.to_string()))?
             .header.original_filename;
 
