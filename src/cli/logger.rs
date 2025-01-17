@@ -46,14 +46,14 @@ impl Logger {
                 return;
             },
             LoggerMode::NORMAL => {
-                if log_type == LogType::ERROR {
+                if log_type == LogType::ERROR || log_type == LogType::WARNING {
                     eprintln!("[{}] {}", get_icon(log_type), message);
                 } else if log_type == LogType::SUCCESS {
                     println!("[{}] {}", get_icon(log_type), message);
                 }
             },
             LoggerMode::VERBOSE => {
-                if log_type == LogType::ERROR {
+                if log_type == LogType::ERROR || log_type == LogType::WARNING {
                     eprintln!("[{}] {}", get_icon(log_type), message);
                 } else {
                     println!("[{}] {}", get_icon(log_type), message);

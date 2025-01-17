@@ -1,11 +1,9 @@
 //! Core API wrapper functions which handle the CLI input
 
 use std::{collections::VecDeque, path::PathBuf, ffi::OsStr};
-use std::process::exit;
 use clap::ArgMatches;
-use crate::core::utils::path;
-use crate::{Error, options, log_error, log_success, log_warn, log_info};
-use crate::core::error::ProfileErrorKind;
+use crate::utils::path;
+use crate::{options, log_error, log_success, log_warn, log_info, exits_on};
 use super::prompts;
 
 pub fn handle_box(g_args: &ArgMatches, args: &ArgMatches) -> (u32, u32) {
@@ -43,7 +41,7 @@ pub fn handle_box(g_args: &ArgMatches, args: &ArgMatches) -> (u32, u32) {
             Ok(_) => log_success!("Successfully encrypted {:?}", file_name),
             Err(err) => {
                 log_error!("Unable to encrypt \"{}\"", file_name.to_string_lossy());
-                handle_error(err);
+                exits_on!(err; IOError false; InvalidInput false);
                 error_files += 1;
             }
         }
@@ -86,7 +84,7 @@ pub fn handle_unbox(g_args: &ArgMatches, args: &ArgMatches) -> (u32, u32) {
             Ok(_) => log_success!("Successfully decrypted {:?}", path.file_name().unwrap().to_os_string()),
             Err(err) => {
                 log_error!("Unable to encrypt \"{}\"", file_name.to_string_lossy());
-                handle_error(err);
+                exits_on!(err; IOError false; InvalidInput false);
                 error_files += 1;
             }
         }
@@ -107,7 +105,7 @@ pub fn handle_profile_create(g_args: &ArgMatches, args: &ArgMatches) {
         Ok(_) => log_success!("Successfully created new profile \"{}\"", name),
         Err(err) => {
             log_error!("Unable to create a new profile named \"{}\"", name);
-            handle_error(err);
+            exits_on!(err; all);
         }
     }
 }
@@ -124,7 +122,7 @@ pub fn handle_profile_delete(g_args: &ArgMatches, args: &ArgMatches) {
         Ok(_) => log_success!("Successfully deleted profile \"{}\"", name),
         Err(err) => {
             log_error!("Unable to delete profile \"{}\"", name);
-            handle_error(err);
+            exits_on!(err; all);
         }
     }
 }
@@ -141,7 +139,7 @@ pub fn handle_profile_set(g_args: &ArgMatches, args: &ArgMatches) {
         Ok(_) => log_success!("Successfully set current profile to \"{}\"", name),
         Err(err) => {
             log_error!("Unable to switch to profile \"{}\"", name);
-            handle_error(err);
+            exits_on!(err; all);
         }
     }
 }
@@ -151,7 +149,7 @@ pub fn handle_profile_get(_g_args: &ArgMatches, _args: &ArgMatches) {
         Ok(name) => log_success!("Currently selected profile: {}", name),
         Err(err) => {
             log_error!("Unable to get currently selected profile");
-            handle_error(err);
+            exits_on!(err; all);
         }
     }
 }
@@ -161,8 +159,7 @@ pub fn handle_profile_list(_g_args: &ArgMatches, _args: &ArgMatches) {
 
     let profiles = profiles.unwrap_or_else(|err| {
         log_error!("Unable to get a list of all profiles");
-        handle_error(err);
-        vec![]
+        exits_on!(err; all);
     });
     let count = profiles.len();
 
@@ -188,7 +185,7 @@ pub fn handle_key_new(g_args: &ArgMatches, _args: &ArgMatches) {
         Ok(_) => log_success!("Successfully generated new encryption key for the current profile"),
         Err(err) => {
             log_error!("Unable to generate a new encryption key");
-            handle_error(err);
+            exits_on!(err; all);
         }
     }
 }
@@ -210,7 +207,7 @@ pub fn handle_key_get(g_args: &ArgMatches, args: &ArgMatches) {
         }
         Err(err) => {
             log_error!("Unable to get an encryption key for the current profile");
-            handle_error(err);
+            exits_on!(err; all);
         }
     }
 }
@@ -227,7 +224,7 @@ pub fn handle_key_set(g_args: &ArgMatches, args: &ArgMatches) {
         Ok(_) => log_success!("Successfully set a new encryption key for the current profile"),
         Err(err) => {
             log_error!("Unable to set an encryption key for the current profile");
-            handle_error(err);
+            exits_on!(err; all);
         }
     }
 }
@@ -255,26 +252,4 @@ fn get_path_deque(args: &ArgMatches, arg_id: &str) -> Option<VecDeque<PathBuf>> 
         return Some(deque)
     }
     None
-}
-
-/// Handles the error and acts according to each error
-fn handle_error(err: Error) {
-    log_error!("{}", err);
-    match &err {
-        Error::ProfileError(kind) => {
-            if let ProfileErrorKind::AuthenticationFailed = kind {
-                log_warn!("Try again or use a different profile")
-            } else {
-                log_warn!("New profile can be created with \"lockbox profile new\"");
-            }
-        },
-        Error::ConfigError(_) => {
-            log_warn!("Please check the config file for any mistakes and try again");
-        }
-        _ => {}
-    }
-
-    if err.should_exit() {
-        exit(err.exit_code());
-    }
 }
