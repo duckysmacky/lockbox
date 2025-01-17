@@ -4,7 +4,7 @@ use std::{fs, io};
 use std::path::Path;
 use lockbox::Error;
 
-pub mod commands;
+pub mod command;
 
 pub const PROFILE_NAME: &str = "common-test-profile";
 pub const PASSWORD: &str = "common-test-password";
