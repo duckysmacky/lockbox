@@ -1,104 +1,196 @@
-//! Contains functions related to manipulating header for the custom file format (.box)
+//! Contains implementation for the custom `boxfile` file format, it's header and
+//! additional information for parsing and serializing the custom file format.
 
 use serde::{Deserialize, Serialize};
-use std::fs::{self, File};
-use std::io::{Read, Write};
+use sha2::{Digest, Sha256};
 use std::path::Path;
-use std::ffi::OsString;
-use crate::core::encryption::checksum;
-use crate::{new_err, Checksum, Nonce, Result};
-use header_info::{VERSION, MAGIC};
+use std::ffi::{OsStr, OsString};
+use crate::{new_err, Checksum, Key, Nonce, Result};
+use crate::core::data::io;
+use super::cipher;
 
-pub mod header_info {
-    /// Version of the file format being used for backwards compatibility
+mod header_info {
+    //! Constants for the header: current file format version and unique file
+    //! identifier (magic)
+    /// Version of the `boxfile` format being used for backwards compatibility
     pub const VERSION: u8 = 1;
-    /// Unique identifier for the file format
+    /// Unique identifier for the `boxfile` file format
     pub const MAGIC: [u8; 4] = [b'B', b'O', b'X', VERSION];
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct BoxHeader {
+/// Struct representing a `boxfile` structure. A "boxfile" is the custom file 
+/// format for lockbox which contains the encrypted data of a file, along side
+/// header with extra information and random padding. It is generated as a result
+/// of file encryption operation and has a `.box` extension.
+///
+/// *The `boxfile` structure is heavily inspired by the SSH Packet structure. As it
+/// is known to be safe and efficient*
+#[derive(Serialize, Deserialize)]
+pub struct Boxfile {
+    /// Custom header for the boxfile. Not encrypted unlike the body of the file and
+    /// is avaliable for reading by other proccessing, meaning an encryption key is
+    /// not required, as doesn't contain any sensetive information.
+    ///
+    /// *Could be a subject to change in the future*
+    header: BoxfileHeader,
+    /// File body is the encrypted content of the original file together with randomly
+    /// generated `padding`. It is the main payload for the entire `boxfile`. Can be
+    /// compressed for reduced storage size
+    ///
+    /// `Padding` is a randomly generated array of random bytes used for encryption
+    /// obfuscation. It is encrypted together with the original file so that bytes
+    /// mix together and make information even more unreadable without a decryption
+    /// key. There must be at least 4 bytes of padding and a maximum of 255 bytes.
+    ///
+    /// Padding should be of such a length, that the total length of any `boxfile`
+    /// component (header/body/padding itself) is a multiple of the cipher block
+    /// size or 8 (whichever is larger).
+    body: Box<[u8]>,
+    /// Checksum is a hash generated from the content of the `boxfile` file body
+    /// before the encryption occurs. It ensures the data's integrity by comparing
+    /// it to the checksum generated after decryption of the same file.
+    checksum: Checksum
+}
+
+impl Boxfile {
+    /// Generates a new `boxfile` from the provided file. Creates a new `BoxfileHeader`
+    /// and stores original file's name and extension in it, also generates a unique 
+    /// `Nonce` for later usage in encryption. Padding is also generated during this
+    /// step and added at the end of the original file's data as a part of the body.
+    /// Chesum is generated at the very end from the header and body content.
+    pub fn new(file_path: &Path) -> Result<Self> {
+        let file_data = io::read_bytes(file_path)?;
+        let padding_len: u8 = (file_data.len() as u8 / 8) + 1;
+        let padding = Self::generate_padding(padding_len);
+        let body = [file_data, padding].concat();
+
+        let header = BoxfileHeader::new(
+            file_path.file_stem(),
+            file_path.extension(),
+            padding_len,
+            cipher::generate_nonce()
+        );
+
+        let mut hasher = Sha256::new();
+        hasher.update(&header.as_bytes()?);
+        hasher.update(&body);
+        let result = hasher.finalize();
+        let mut checksum = [0u8; 32];
+        checksum.copy_from_slice(&result);
+        
+        Ok(Self {
+            header,
+            body: body.into(),
+            checksum
+        })
+    }
+
+    /// Parses the provided file, tries to deserialize it and returns a parsed `boxfile`
+    pub fn parse(file_path: &Path) -> Result<Self> {
+        let bytes = io::read_bytes(file_path)?;
+        let boxfile: Boxfile = bincode::deserialize(&bytes)
+            .map_err(|err| new_err!(SerializeError: BoxfileParseError, err))?;
+
+        Ok(boxfile)
+    }
+
+    /// Returns the information about the file contained within the `boxfile`: original
+    /// file name and extension.
+    pub fn file_info(&self) -> (&OsString, &OsString) {
+        let file_name = &self.header.original_name;
+        let file_extension = &self.header.original_extension;
+        (file_name, file_extension)
+    }
+
+    /// Generates checksum for header, body and padding
+    pub fn generate_checksum(&self) -> Result<Checksum> {
+        let mut hasher = Sha256::new();
+        hasher.update(&self.header.as_bytes()?);
+        hasher.update(&self.body);
+
+        let result = hasher.finalize();
+        let mut checksum = [0u8; 32];
+
+        checksum.copy_from_slice(&result);
+        Ok(checksum)
+    }
+
+    /// Encrypts the body of the `boxfile` together with randomly generated padding 
+    /// using the provided encryption key
+    fn encrypt_data(&mut self, key: &Key) -> Result<()> {
+        let encrypted_body = cipher::encrypt(key, &self.header.nonce, &self.body)?;
+        self.body = encrypted_body.into();
+        Ok(())
+    }
+    
+    /// Decrypts the body of the `boxfile` and removes the unneeded padding, returning
+    /// only the actual data conent of the original file
+    fn decrypt_data(&mut self, key: &Key) -> Result<Box<[u8]>> {
+        let decrypted_body = cipher::decrypt(key, &self.header.nonce, &self.body)?;
+        let padding_len = self.header.padding_len;
+        let data_len = decrypted_body.len() - padding_len as usize;
+        if data_len < 0 {
+            return Err(new_err!(SerializeError: BoxfileParseError, "Invalid file data length"))
+        }
+        let file_data = &decrypted_body[..data_len];
+        Ok(file_data.into())
+    }
+
+    // TODO: generate padding based on the length of the cipher block size and data
+    /// Generates random padding of specified length
+    fn generate_padding(padding_len: u8) -> Vec<u8> {
+        vec![0u8; padding_len as usize]
+    }
+}
+
+/// The header for the `boxfile`, which contains extra information about the file. This
+/// includes a unique identifier (magic), length of the generated padding, the original
+/// file name and extension and generated `Nonce` for encryption/decryption uniqueness
+#[derive(Serialize, Deserialize)]
+struct BoxfileHeader {
+    /// Unique indentifier for the file format including the used version
     magic: [u8; 4],
-    version: u8,
-    metadata_length: u16,
-    pub original_filename: OsString,
-    pub original_extension: OsString,
-    pub original_size: u64,
-    pub checksum: Checksum,
-    pub nonce: Nonce
+    /// The length of the generated padding
+    padding_len: u8,
+    /// The original name of the file
+    original_name: OsString,
+    /// The original extension of the file
+    original_extension: OsString,
+    /// Randomly generated 12-byte `Nonce` used for encryption and decryption. Ensures
+    /// that no chipertext generated using one key is the same
+    nonce: Nonce
 }
 
-/// `.box` file format structure
-#[derive(Serialize, Deserialize, Debug)]
-pub struct BoxFile {
-    pub header: BoxHeader,
-    pub body: Vec<u8>
-}
-
-/// Generates and returns a new header for the file at the provided path based on its data, as well
-/// as generates checksum for the provided data
-pub fn generate_header(path: &Path, data: &[u8], nonce: &Nonce) -> Result<BoxHeader> {
-    let file_data = fs::metadata(path)?;
-
-    let mut header = BoxHeader {
-        magic: MAGIC,
-        version: VERSION,
-        metadata_length: 0,
-        original_filename: match path.file_stem() {
+impl BoxfileHeader {
+    pub fn new(
+        file_name: Option<&OsStr>,
+        file_extension: Option<&OsStr>,
+        padding_len: u8,
+        nonce: Nonce 
+    ) -> Self {
+        let file_name = match file_name {
+            None => OsString::from("unknown"),
+            Some(name) => OsString::from(name)
+        };
+        let file_extension = match file_extension {
             None => OsString::from(""),
-            Some(file_stem) => file_stem.to_os_string()
-        },
-        original_extension: match path.extension() {
-            None => OsString::from(""),
-            Some(extension) => extension.to_os_string()
-        },
-        original_size: file_data.len(),
-        checksum: checksum::generate_checksum(data),
-        nonce: *nonce
-    };
+            Some(name) => OsString::from(name)
+        };
 
-    header.metadata_length = get_metadata_length(&header);
-    Ok(header)
+        BoxfileHeader {
+            magic: header_info::MAGIC,
+            original_name: file_name,
+            original_extension: file_extension,
+            padding_len,
+            nonce
+        }
+    }
+
+    /// Returns the header serialized as plain bytes
+    pub fn as_bytes(&self) -> Result<Vec<u8>> {
+        let bytes = bincode::serialize(&self)
+            .map_err(|err| new_err!(SerializeError: HeaderParseError, err))?;
+        Ok(bytes)
+    }
 }
 
-/// Reads the `.box` file at the provided file and returns parsed information
-pub fn parse_file(path: &Path) -> Result<BoxFile> {
-    let mut file = File::open(path)?;
-    let metadata = fs::metadata(path)?;
-
-    let mut buffer = vec![0; metadata.len() as usize];
-    file.read(&mut buffer)?;
-
-    let box_file: BoxFile = bincode::deserialize(&buffer)
-        .map_err(|err| new_err!(SerializeError: BOXParseError, err))?;
-    Ok(box_file)
-}
-
-/// Writes header information and bytes to the file at the provided path
-pub fn write_file(path: &Path, header: BoxHeader, body: Vec<u8>) -> Result<()> {
-    let mut file = File::create(path)?;
-
-    let box_file = BoxFile {header, body};
-    let box_data = bincode::serialize(&box_file)
-        .map_err(|err| new_err!(SerializeError: BOXParseError, err))?;
-
-    file.write_all(&box_data)?;
-
-    file.flush()?;
-    Ok(())
-}
-
-fn get_metadata_length(header: &BoxHeader) -> u16 {
-    let mut metadata_len = 0;
-
-    metadata_len += 4; // magic: u8 * 4 = 4 bytes
-    metadata_len += 1; // version: u8 = 1 byte
-    metadata_len += 2; // metadata_len: u16 = 2 bytes
-    metadata_len += header.original_filename.len();
-    metadata_len += header.original_extension.len();
-    metadata_len += 8; // original_size: u64 = 8 bytes
-    metadata_len += 32; // checksum: u8 * 32 = 32 bytes
-    metadata_len += 12; // nonce: u8 * 12 = 12 bytes
-
-    metadata_len as u16
-}

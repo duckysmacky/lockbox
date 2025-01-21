@@ -186,7 +186,8 @@ impl Display for EncryptionErrorKind {
 pub enum SerializeErrorKind {
     JSONParseError(String, usize, usize),
     TOMLParseError(String),
-    BOXParseError(String),
+    BoxfileParseError(String),
+    HeaderParseError(String),
 }
 
 impl Display for SerializeErrorKind {
@@ -194,7 +195,8 @@ impl Display for SerializeErrorKind {
         match self {
             SerializeErrorKind::JSONParseError(s, l, c) => write!(f, "Unable to parse a JSON file (line {}, column {}):\n{}", l, c, s),
             SerializeErrorKind::TOMLParseError(s) => write!(f, "Unable to parse a TOML file:\n{}", s),
-            SerializeErrorKind::BOXParseError(s) => write!(f, "Unable to parse a BOX file:\n{}", s),
+            SerializeErrorKind::BoxfileParseError(s) => write!(f, "Unable to parse a boxfile:\n{}", s),
+            SerializeErrorKind::HeaderParseError(s) => write!(f, "Unable to parse a boxfile header:\n{}", s),
         }
     }
 }
