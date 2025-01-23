@@ -73,11 +73,14 @@ pub fn decrypt(password: &str, input_path: &Path, opts: &mut options::Decryption
 
     let mut boxfile = boxfile::Boxfile::parse(&input_path)?;
     let key = keys::get_key()?;
-    let file_data = boxfile.decrypt_data(&key)?;
+    boxfile.decrypt_data(&key)?;
     let (original_name, original_extension) = boxfile.file_info();
+    let file_data = boxfile.file_data()?;
 
-    log_info!("Validating checksum");
-    if !boxfile.verify_checksum()? {
+    log_info!("Validating checksum...");
+    if boxfile.verify_checksum()? {
+        log_info!("Checksum verification successful");
+    } else {
         log_warn!("Checksum verification failed. Data seems to be tampered with");
     }
 

@@ -52,6 +52,7 @@ pub struct Boxfile {
     checksum: Checksum,
 }
 
+// TODO: add debug logs
 impl Boxfile {
     /// Generates a new `boxfile` from the provided file. Creates a new `BoxfileHeader`
     /// and stores original file's name and extension in it, also generates a unique 
@@ -143,16 +144,21 @@ impl Boxfile {
         Ok(())
     }
     
-    /// Decrypts the body of the `boxfile` and removes the unneeded padding, returning
-    /// only the actual data content of the original file
-    pub fn decrypt_data(&mut self, key: &Key) -> Result<Box<[u8]>> {
+    /// Decrypts the body of the `boxfile` (data + padding) using the provided encryption key
+    pub fn decrypt_data(&mut self, key: &Key) -> Result<()> {
         let decrypted_body = cipher::decrypt(key, &self.header.nonce, &self.body)?;
+        self.body = decrypted_body.into();
+        Ok(())
+    }
+
+    /// Removes the generated padding, returning only the actual data content of the original file
+    pub fn file_data(&self) -> Result<Box<[u8]>> {
         let padding_len = self.header.padding_len;
-        let data_len = decrypted_body.len() as i32 - padding_len as i32;
+        let data_len = self.body.len() as i32 - padding_len as i32;
         if data_len < 0 {
             return Err(new_err!(SerializeError: BoxfileParseError, "Invalid file data length"))
         }
-        let file_data = &decrypted_body[..data_len as usize];
+        let file_data = &self.body[..data_len as usize];
         Ok(file_data.into())
     }
 
