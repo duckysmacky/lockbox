@@ -4,7 +4,7 @@ use std::fs;
 use std::path::Path;
 use crate::core::data::{io, keys};
 use crate::core::encryption::{boxfile, cipher};
-use crate::{Result, log_debug, log_info, log_warn, new_err, options};
+use crate::{Result, log_debug, log_info, log_warn, new_err, options, Key};
 use crate::core::data::profile::Profile;
 
 pub mod utils;
@@ -197,7 +197,7 @@ pub fn get_key(password: &str, opts: options::GetKeyOptions) -> Result<String> {
     log_info!("Retrieving the encryption key from the current profile");
     let key = keys::get_key()?;
     if !opts.byte_format {
-        return Ok(utils::hex::key_to_hex_string(key));
+        return Ok(utils::hex::bytes_to_string(&key));
     }
 
     Ok(format!("{:?}", key))
@@ -212,7 +212,13 @@ pub fn set_key(password: &str, new_key: &str) -> Result<()> {
     }
 
     log_info!("Setting the encryption key from the current profile");
-    let new_key = utils::hex::hex_string_to_key(new_key.to_string())?;
+    let new_key = utils::hex::string_to_bytes(new_key)?;
+    
+    if new_key.len() != 32 {
+        return Err(new_err!(InvalidData: InvalidHex, "The provided hex is not a 32-byte key"))
+    }
+    
+    let new_key = Key::try_from(&new_key[..32]).unwrap();
     keys::set_key(new_key)?;
     Ok(())
 }

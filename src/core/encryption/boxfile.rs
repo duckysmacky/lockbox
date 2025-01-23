@@ -80,7 +80,7 @@ impl Boxfile {
         let result = hasher.finalize();
         let mut checksum = [0u8; 32];
         checksum.copy_from_slice(&result);
-        log_debug!("Checksum generated: {:?}", utils::hex::key_to_hex_string(checksum));
+        log_debug!("Checksum generated: {:?}", utils::hex::bytes_to_string(&checksum));
 
         Ok(Self {
             header,
@@ -127,8 +127,8 @@ impl Boxfile {
         let mut checksum = [0u8; 32];
 
         checksum.copy_from_slice(&result);
-        log_debug!("Boxfile checksum: {:?}", utils::hex::key_to_hex_string(self.checksum));
-        log_debug!("Updated checksum: {:?}", utils::hex::key_to_hex_string(checksum));
+        log_debug!("Boxfile checksum: {:?}", utils::hex::bytes_to_string(&self.checksum));
+        log_debug!("Updated checksum: {:?}", utils::hex::bytes_to_string(&checksum));
         Ok(checksum == self.checksum)
     }
 

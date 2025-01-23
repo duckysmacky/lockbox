@@ -140,13 +140,13 @@ impl Display for OSErrorKind {
 
 #[derive(Debug)]
 pub enum InvalidDataKind {
-    InvalidHexNumber(String),
+    InvalidHex(String),
 }
 
 impl Display for InvalidDataKind {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            InvalidDataKind::InvalidHexNumber(s) => write!(f, "Invalid hex number provided ({})", s),
+            InvalidDataKind::InvalidHex(s) => write!(f, "Invalid hex number provided ({})", s),
         }
     }
 }
@@ -435,8 +435,8 @@ mod tests {
         let err = new_err!(ProfileError: NotSelected);
         assert!(err_cmp!(err, ProfileError, NotSelected));
         
-        let str_err = new_err!(InvalidData: InvalidHexNumber, "placeholder");
-        assert!(err_cmp!(str_err, InvalidData, InvalidHexNumber()));
+        let str_err = new_err!(InvalidData: InvalidHex, "placeholder");
+        assert!(err_cmp!(str_err, InvalidData, InvalidHex()));
         
         let os_str_err = new_err!(InvalidInput: FileNotSupported, os OsStr::new("filename"));
         assert!(err_cmp!(os_str_err, InvalidInput, FileNotSupported()));
