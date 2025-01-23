@@ -83,7 +83,7 @@ pub fn handle_unbox(g_args: &ArgMatches, args: &ArgMatches) -> (u32, u32) {
         match crate::decrypt(&password, path.as_path(), &mut options) {
             Ok(_) => log_success!("Successfully decrypted {:?}", path.file_name().unwrap().to_os_string()),
             Err(err) => {
-                log_error!("Unable to encrypt \"{}\"", file_name.to_string_lossy());
+                log_error!("Unable to decrypt \"{}\"", file_name.to_string_lossy());
                 exits_on!(err; IOError false; InvalidInput false);
                 error_files += 1;
             }

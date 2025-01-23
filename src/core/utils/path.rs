@@ -58,8 +58,6 @@ fn search_for_original(dir_path: &Path, target_name: OsString) -> Result<PathBuf
         let boxfile = boxfile::Boxfile::parse(&path)?;
         let (original_name, _) = boxfile.file_info();
 
-        println!("Original: {:?} | Target: {:?}", &original_name, &target_name);
-
         if target_name.eq(original_name) {
             log_info!("Found an encrypted (.box) file with the same original name: {}", path.display());
             return Ok(path)

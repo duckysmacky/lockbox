@@ -3,7 +3,7 @@
 
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::ffi::{OsStr, OsString};
 use crate::{new_err, Checksum, Key, Nonce, Result};
 use crate::core::data::io;
@@ -29,7 +29,7 @@ mod header_info {
 pub struct Boxfile {
     /// Custom header for the boxfile. Not encrypted unlike the body of the file and
     /// is available for reading by other processing, meaning an encryption key is
-    /// not required, as doesn't contain any sensetive information.
+    /// not required, as doesn't contain any sensitive information.
     ///
     /// *Could be a subject to change in the future*
     header: BoxfileHeader,
@@ -49,7 +49,7 @@ pub struct Boxfile {
     /// Checksum is a hash generated from the content of the `boxfile` file body
     /// before the encryption occurs. It ensures the data's integrity by comparing
     /// it to the checksum generated after decryption of the same file.
-    checksum: Checksum
+    checksum: Checksum,
 }
 
 impl Boxfile {
@@ -58,8 +58,10 @@ impl Boxfile {
     /// `Nonce` for later usage in encryption. Padding is also generated during this
     /// step and added at the end of the original file's data as a part of the body.
     /// Checksum is generated at the very end from the header and body content.
-    pub fn new(file_path: PathBuf) -> Result<Self> {
+    pub fn new(file_path: &Path) -> Result<Self> {
         let file_data = io::read_bytes(&file_path)?;
+        std::fs::remove_file(&file_path)?;
+
         let padding_len: u8 = (file_data.len() as u8 / 8) + 1;
         let padding = Self::generate_padding(padding_len);
         let body = [file_data, padding].concat();
@@ -85,9 +87,19 @@ impl Boxfile {
         })
     }
 
-    /// Parses the provided file, tries to deserialize it and returns a parsed `boxfile`
+    /// Parses the provided file, tries to deserialize it and returns a parsed `boxfile`.
     pub fn parse(file_path: &Path) -> Result<Self> {
+        if let Some(extension) = file_path.extension() {
+            if extension != "box" {
+                return Err(new_err!(InvalidInput: FileNotSupported, os file_path.file_name().unwrap()))
+            }
+        } else {
+            return Err(new_err!(InvalidInput: FileNotSupported, os file_path.file_name().unwrap()))
+        }
+
         let bytes = io::read_bytes(file_path)?;
+        std::fs::remove_file(file_path)?;
+
         let boxfile: Boxfile = bincode::deserialize(&bytes)
             .map_err(|err| new_err!(SerializeError: BoxfileParseError, err))?;
 
