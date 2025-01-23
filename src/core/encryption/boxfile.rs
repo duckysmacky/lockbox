@@ -3,7 +3,7 @@
 
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::ffi::{OsStr, OsString};
 use crate::{new_err, Checksum, Key, Nonce, Result};
 use crate::core::data::io;
@@ -19,7 +19,7 @@ mod header_info {
 }
 
 /// Struct representing a `boxfile` structure. A "boxfile" is the custom file 
-/// format for lockbox which contains the encrypted data of a file, along side
+/// format for lockbox which contains the encrypted data of a file, alongside
 /// header with extra information and random padding. It is generated as a result
 /// of file encryption operation and has a `.box` extension.
 ///
@@ -28,7 +28,7 @@ mod header_info {
 #[derive(Serialize, Deserialize)]
 pub struct Boxfile {
     /// Custom header for the boxfile. Not encrypted unlike the body of the file and
-    /// is avaliable for reading by other proccessing, meaning an encryption key is
+    /// is available for reading by other processing, meaning an encryption key is
     /// not required, as doesn't contain any sensetive information.
     ///
     /// *Could be a subject to change in the future*
@@ -57,9 +57,9 @@ impl Boxfile {
     /// and stores original file's name and extension in it, also generates a unique 
     /// `Nonce` for later usage in encryption. Padding is also generated during this
     /// step and added at the end of the original file's data as a part of the body.
-    /// Chesum is generated at the very end from the header and body content.
-    pub fn new(file_path: &Path) -> Result<Self> {
-        let file_data = io::read_bytes(file_path)?;
+    /// Checksum is generated at the very end from the header and body content.
+    pub fn new(file_path: PathBuf) -> Result<Self> {
+        let file_data = io::read_bytes(&file_path)?;
         let padding_len: u8 = (file_data.len() as u8 / 8) + 1;
         let padding = Self::generate_padding(padding_len);
         let body = [file_data, padding].concat();
@@ -102,8 +102,9 @@ impl Boxfile {
         (file_name, file_extension)
     }
 
-    /// Generates checksum for header, body and padding
-    pub fn generate_checksum(&self) -> Result<Checksum> {
+    /// Verifies checksum for the `boxfile` by generating new checksum for current data and
+    /// comparing it to the checksum stored in the header
+    pub fn verify_checksum(&self) -> Result<bool> {
         let mut hasher = Sha256::new();
         hasher.update(&self.header.as_bytes()?);
         hasher.update(&self.body);
@@ -112,27 +113,36 @@ impl Boxfile {
         let mut checksum = [0u8; 32];
 
         checksum.copy_from_slice(&result);
-        Ok(checksum)
+        Ok(checksum == self.checksum)
+    }
+
+    /// Serializes self and writes to specified file
+    pub fn save_to(&self, path: &Path) -> Result<()> {
+        let bytes = bincode::serialize(&self)
+            .map_err(|err| new_err!(SerializeError: BoxfileParseError, err))?;
+        io::write_bytes(path, &bytes, true)?;
+
+        Ok(())
     }
 
     /// Encrypts the body of the `boxfile` together with randomly generated padding 
     /// using the provided encryption key
-    fn encrypt_data(&mut self, key: &Key) -> Result<()> {
+    pub fn encrypt_data(&mut self, key: &Key) -> Result<()> {
         let encrypted_body = cipher::encrypt(key, &self.header.nonce, &self.body)?;
         self.body = encrypted_body.into();
         Ok(())
     }
     
     /// Decrypts the body of the `boxfile` and removes the unneeded padding, returning
-    /// only the actual data conent of the original file
-    fn decrypt_data(&mut self, key: &Key) -> Result<Box<[u8]>> {
+    /// only the actual data content of the original file
+    pub fn decrypt_data(&mut self, key: &Key) -> Result<Box<[u8]>> {
         let decrypted_body = cipher::decrypt(key, &self.header.nonce, &self.body)?;
         let padding_len = self.header.padding_len;
-        let data_len = decrypted_body.len() - padding_len as usize;
+        let data_len = decrypted_body.len() as i32 - padding_len as i32;
         if data_len < 0 {
             return Err(new_err!(SerializeError: BoxfileParseError, "Invalid file data length"))
         }
-        let file_data = &decrypted_body[..data_len];
+        let file_data = &decrypted_body[..data_len as usize];
         Ok(file_data.into())
     }
 
@@ -148,7 +158,7 @@ impl Boxfile {
 /// file name and extension and generated `Nonce` for encryption/decryption uniqueness
 #[derive(Serialize, Deserialize)]
 struct BoxfileHeader {
-    /// Unique indentifier for the file format including the used version
+    /// Unique identifier for the file format including the used version
     magic: [u8; 4],
     /// The length of the generated padding
     padding_len: u8,
@@ -157,7 +167,7 @@ struct BoxfileHeader {
     /// The original extension of the file
     original_extension: OsString,
     /// Randomly generated 12-byte `Nonce` used for encryption and decryption. Ensures
-    /// that no chipertext generated using one key is the same
+    /// that no ciphertext generated using one key is the same
     nonce: Nonce
 }
 

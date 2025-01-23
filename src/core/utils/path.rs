@@ -1,9 +1,9 @@
 //! Contains functions for path manipulation
 
-use std::{ffi::OsString, fs, io};
+use std::{ffi::OsString, fs};
 use std::path::{Path, PathBuf};
 use crate::core::encryption::boxfile;
-use crate::{log_info, log_warn};
+use crate::{Result, new_err, log_info, log_warn};
 
 /// Opens and parses provided path, returning a flattened list of all found paths. Verifies if the
 /// given paths exists. In case of a directory being provided returns all paths inside of it. Can
@@ -34,7 +34,7 @@ pub fn parse_paths(input_paths: Vec<PathBuf>, recursive: bool) -> Vec<PathBuf> {
     file_paths
 }
 
-fn read_dir(dir_path: &Path, file_paths: &mut Vec<PathBuf>, recursive: bool) -> io::Result<()> {
+fn read_dir(dir_path: &Path, file_paths: &mut Vec<PathBuf>, recursive: bool) -> Result<()> {
     for entry in fs::read_dir(dir_path)? {
         let path = entry?.path();
 
@@ -49,24 +49,22 @@ fn read_dir(dir_path: &Path, file_paths: &mut Vec<PathBuf>, recursive: bool) -> 
 }
 
 /// Searches `.box` files within a directory for one which matches its original name with provided
-fn search_for_original(dir_path: &Path, target_name: OsString) -> io::Result<PathBuf> {
+fn search_for_original(dir_path: &Path, target_name: OsString) -> Result<PathBuf> {
     for entry in fs::read_dir(dir_path)? {
         let path = entry?.path();
 
         if !path.is_file() || path.extension().unwrap() != "box" { continue; }
 
-        let original_name = boxfile::parse_file(path.as_path())
-            .map_err(|err| io::Error::new(io::ErrorKind::InvalidData, err.to_string()))?
-            .header.original_filename;
+        let boxfile = boxfile::Boxfile::parse(&path)?;
+        let (original_name, _) = boxfile.file_info();
 
-        if target_name == original_name {
+        println!("Original: {:?} | Target: {:?}", &original_name, &target_name);
+
+        if target_name.eq(original_name) {
             log_info!("Found an encrypted (.box) file with the same original name: {}", path.display());
             return Ok(path)
         }
     }
 
-    Err(io::Error::new(
-        io::ErrorKind::NotFound,
-        "Given file name is not present within original encrypted file names")
-    )
+    Err(new_err!(InvalidInput: FileNotFound, os target_name))
 }

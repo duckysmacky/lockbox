@@ -3,7 +3,7 @@
 use std::path::{Path, PathBuf};
 use std::fs;
 use crate::core::data::{io, keys};
-use crate::core::encryption::{boxfile, checksum, cipher};
+use crate::core::encryption::{boxfile, cipher};
 use crate::{Result, log_debug, log_info, log_warn, new_err, options};
 use crate::core::data::profile::Profile;
 
@@ -29,37 +29,29 @@ pub fn encrypt(password: &str, input_path: &Path, opts: &mut options::Encryption
         }
     }
 
-    let mut path_buffer = PathBuf::from(input_path);
-    let file_path = path_buffer.as_path();
+    let mut file_path = PathBuf::from(input_path);
 
-    // get needed data
-    let file_data = io::read_bytes(file_path).map_err(crate::Error::from)?;
+    let mut boxfile = boxfile::Boxfile::new(file_path.clone())?;
     let key = keys::get_key()?;
-    let nonce = cipher::generate_nonce();
-    let header = boxfile::generate_header(file_path, &file_data, &nonce)?;
-
-    // change the file to be .box instead
-    fs::remove_file(file_path)?;
+    boxfile.encrypt_data(&key)?;
+    fs::remove_file(&file_path)?;
 
     if let Some(ref mut output_paths) = opts.output_paths {
         log_debug!("Output paths given: {:?}", output_paths);
         if let Some(output_path) = output_paths.pop_front() {
             log_debug!("Writing output to: {:?}", output_path);
-            path_buffer = output_path;
+            file_path = output_path;
 
-            if path_buffer.file_name() == None {
-                path_buffer.set_file_name(uuid::Uuid::new_v4().to_string());
+            if file_path.file_name() == None {
+                file_path.set_file_name(uuid::Uuid::new_v4().to_string());
             }
         }
     } else if !opts.keep_original_name {
-        path_buffer.set_file_name(uuid::Uuid::new_v4().to_string());
+        file_path.set_file_name(uuid::Uuid::new_v4().to_string());
     }
-
-    path_buffer.set_extension("box");
-    let file_path = path_buffer.as_path();
-
-    let body = cipher::encrypt(&key, &nonce, &file_data)?;
-    boxfile::write_file(file_path, header, body)?;
+    
+    file_path.set_extension("box");
+    boxfile.save_to(&file_path)?;
 
     Ok(())
 }
@@ -83,43 +75,40 @@ pub fn decrypt(password: &str, input_path: &Path, opts: &mut options::Decryption
         return Err(new_err!(InvalidInput: FileNotSupported, os input_path.file_name().unwrap()))
     }
 
-    let mut path_buffer = PathBuf::from(input_path);
-    let file_path = path_buffer.as_path();
+    let mut file_path = PathBuf::from(input_path);
 
+    let mut boxfile = boxfile::Boxfile::parse(&file_path)?;
     let key = keys::get_key()?;
-    let box_file = boxfile::parse_file(file_path)?;
-    let header = box_file.header;
-    let body = cipher::decrypt(&key, &header.nonce, &box_file.body)?;
+    let file_data = boxfile.decrypt_data(&key)?;
+    let (original_name, original_extension) = boxfile.file_info();
+    fs::remove_file(&file_path)?;
 
-    log_debug!("Validating checksum");
-    let new_checksum = checksum::generate_checksum(&body);
-    if new_checksum != header.checksum {
+    log_info!("Validating checksum");
+    if !boxfile.verify_checksum()? {
         log_warn!("Checksum verification failed. Data seems to be tampered with");
     }
 
-    fs::remove_file(file_path)?;
     if let Some(ref mut output_paths) = opts.output_paths {
         log_debug!("Output paths given: {:?}", output_paths);
         if let Some(output_path) = output_paths.pop_front() {
             log_debug!("Writing output to: {:?}", output_path);
-            path_buffer = output_path;
+            file_path = output_path;
 
-            if path_buffer.file_name() == None {
-                path_buffer.set_file_name(&header.original_filename);
-                path_buffer.set_extension(&header.original_extension);
+            if file_path.file_name() == None {
+                file_path.set_file_name(original_name);
+                file_path.set_extension(original_extension);
             }
 
-            if path_buffer.extension() == None {
-                path_buffer.set_extension(&header.original_extension);
+            if file_path.extension() == None {
+                file_path.set_extension(original_extension);
             }
         }
     } else {
-        path_buffer.set_file_name(&header.original_filename);
-        path_buffer.set_extension(&header.original_extension);
+        file_path.set_file_name(original_name);
+        file_path.set_extension(original_extension);
     }
 
-    let file_path = path_buffer.as_path();
-    io::write_bytes(&file_path, &body, true)?;
+    io::write_bytes(&file_path, &file_data, true)?;
 
     Ok(())
 }

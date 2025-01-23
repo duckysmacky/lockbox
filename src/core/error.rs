@@ -155,6 +155,7 @@ pub enum InvalidInputKind {
     FileAlreadyEncrypted(OsString),
     FileNotEncrypted(OsString),
     FileNotSupported(OsString),
+    FileNotFound(OsString),
 }
 
 impl Display for InvalidInputKind {
@@ -163,6 +164,7 @@ impl Display for InvalidInputKind {
             InvalidInputKind::FileAlreadyEncrypted(s) => write!(f, "File {:?} is already encrypted", s),
             InvalidInputKind::FileNotEncrypted(s) => write!(f, "File {:?} is not encrypted", s),
             InvalidInputKind::FileNotSupported(s) => write!(f, "File {:?} is not supported", s),
+            InvalidInputKind::FileNotFound(s) => write!(f, "File {:?} not found", s),
         }
     }
 }
