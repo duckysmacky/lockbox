@@ -1,4 +1,5 @@
 //! Contains HEX manipulation functions for parsing custom types
+// TODO: make functions accept a byte array of any length, check for valid key length elsewhere
 
 use crate::{Result, Key, new_err};
 

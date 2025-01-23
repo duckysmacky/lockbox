@@ -9,7 +9,6 @@ pub fn generate_key() -> Key {
     ChaCha20Poly1305::generate_key(&mut OsRng).into()
 }
 
-// TODO: generate nonce based on random and file contents
 /// Generates a new random 12-byte encryption nonce
 pub fn generate_nonce() -> Nonce {
     ChaCha20Poly1305::generate_nonce(&mut OsRng).into()
