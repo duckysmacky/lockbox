@@ -1,5 +1,6 @@
 //! Contains the core functionality of the program
 
+use std::fs;
 use std::path::Path;
 use crate::core::data::{io, keys};
 use crate::core::encryption::{boxfile, cipher};
@@ -54,6 +55,7 @@ pub fn encrypt(password: &str, input_path: &Path, opts: &mut options::Encryption
 
     output_path.set_extension("box");
     boxfile.save_to(&output_path)?;
+    fs::remove_file(&input_path)?;
 
     Ok(())
 }
@@ -92,19 +94,22 @@ pub fn decrypt(password: &str, input_path: &Path, opts: &mut options::Decryption
                 }
                 path
             } else {
-                let mut path = input_path.join(original_name);
+                let mut path = input_path.to_path_buf();
+                path.set_file_name(original_name);
                 path.set_extension(original_extension);
                 path
             }
         },
         None => {
-            let mut path = input_path.join(original_name);
+            let mut path = input_path.to_path_buf();
+            path.set_file_name(original_name);
             path.set_extension(original_extension);
             path
         }
     };
     
     io::write_bytes(&output_path, &file_data, true)?;
+    fs::remove_file(&input_path)?;
 
     Ok(())
 }

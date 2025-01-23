@@ -1,6 +1,7 @@
 //! Custom error implementations which are used throughout the whole codebase. Contains a custom
 //! result type, error types and their implementations for Display and conversion from other errors.
 //! Consult every error's doc for more details
+#![allow(irrefutable_let_patterns)]
 
 use std::{fmt, io};
 use std::ffi::OsString;

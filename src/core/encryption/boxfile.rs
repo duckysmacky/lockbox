@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::path::Path;
 use std::ffi::{OsStr, OsString};
-use crate::{new_err, Checksum, Key, Nonce, Result};
+use crate::{log_debug, new_err, utils, Checksum, Key, Nonce, Result};
 use crate::core::data::io;
 use super::cipher;
 
@@ -60,11 +60,9 @@ impl Boxfile {
     /// Checksum is generated at the very end from the header and body content.
     pub fn new(file_path: &Path) -> Result<Self> {
         let file_data = io::read_bytes(&file_path)?;
-        std::fs::remove_file(&file_path)?;
-
         let padding_len: u8 = (file_data.len() as u8 / 8) + 1;
         let padding = Self::generate_padding(padding_len);
-        let body = [file_data, padding].concat();
+        let body: Box<[u8]> = [file_data, padding].concat().into();
 
         let header = BoxfileHeader::new(
             file_path.file_stem(),
@@ -82,7 +80,7 @@ impl Boxfile {
         
         Ok(Self {
             header,
-            body: body.into(),
+            body,
             checksum
         })
     }
@@ -98,8 +96,6 @@ impl Boxfile {
         }
 
         let bytes = io::read_bytes(file_path)?;
-        std::fs::remove_file(file_path)?;
-
         let boxfile: Boxfile = bincode::deserialize(&bytes)
             .map_err(|err| new_err!(SerializeError: BoxfileParseError, err))?;
 
@@ -125,6 +121,8 @@ impl Boxfile {
         let mut checksum = [0u8; 32];
 
         checksum.copy_from_slice(&result);
+        log_debug!("Boxfile checksum: {:?}", utils::hex::key_to_hex_string(self.checksum));
+        log_debug!("Updated checksum: {:?}", utils::hex::key_to_hex_string(checksum));
         Ok(checksum == self.checksum)
     }
 
