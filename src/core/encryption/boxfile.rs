@@ -23,7 +23,7 @@ mod header_info {
 /// header with extra information and random padding. It is generated as a result
 /// of file encryption operation and has a `.box` extension.
 ///
-/// *The `boxfile` structure is heavily inspired by the SSH Packet structure. As it
+/// *The `boxfile` structure is heavily inspired by the SSH Packet structure, as it
 /// is known to be safe and efficient*
 #[derive(Serialize, Deserialize)]
 pub struct Boxfile {

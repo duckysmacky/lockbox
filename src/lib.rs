@@ -6,17 +6,11 @@
 
 pub use core::error::{Error, Result};
 pub use core::utils;
-// TODO: add a way to use the parser in utils without re-importing it
+pub use core::encryption::{boxfile::Boxfile, cipher::{Key, Nonce, Checksum}};
 
 pub mod cli;
 mod core;
 
-/// Type representing a basic 32-byte encryption key
-pub type Key = [u8; 32];
-/// Type representing a 12-byte nonce used for encryption in combination with an encryption key
-pub type Nonce = [u8; 12];
-/// Type representing a 32-byte checksum hash used to validate data integrity
-pub type Checksum = [u8; 32];
 /// Contains extra options for some API functions
 pub mod options {
     use std::{collections::VecDeque, path::PathBuf};

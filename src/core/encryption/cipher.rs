@@ -2,7 +2,14 @@
 
 use chacha20poly1305::{aead::{Aead, KeyInit}, AeadCore, ChaCha20Poly1305};
 use rand::rngs::OsRng;
-use crate::{new_err, Key, Nonce, Result};
+use crate::{new_err, Result};
+
+/// Type representing a basic 32-byte encryption key
+pub type Key = [u8; 32];
+/// Type representing a 32-byte checksum hash used to validate data integrity
+pub type Checksum = [u8; 32];
+/// Type representing a 12-byte nonce used for encryption in combination with an encryption key
+pub type Nonce = [u8; 12];
 
 /// Generates a new random 32-byte encryption key
 pub fn generate_key() -> Key {

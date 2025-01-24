@@ -9,8 +9,8 @@ use crate::core::data::profile::Profile;
 
 pub mod utils;
 pub mod error;
-mod data;
-mod encryption;
+pub mod data;
+pub mod encryption;
 
 /// Encrypts the file at provided path using current profile's key. Password is required to verify
 /// and get access to current profile. Additional options can be supplied to change the encryption

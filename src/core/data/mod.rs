@@ -2,8 +2,8 @@
 //! interactions
 
 use crate::{Result, log_debug};
-use crate::core::data::profile::LockboxProfiles;
-use crate::core::data::config::LockboxConfig;
+use profile::LockboxProfiles;
+use config::LockboxConfig;
 
 pub mod profile;
 pub mod keys;
