@@ -94,10 +94,10 @@ impl Boxfile {
         log_debug!("Parsing boxfile from {:?}", file_path);
         if let Some(extension) = file_path.extension() {
             if extension != "box" {
-                return Err(new_err!(InvalidInput: FileNotSupported, os file_path.file_name().unwrap()))
+                return Err(new_err!(InvalidInput: InvalidFile, "Not encrypted"))
             }
         } else {
-            return Err(new_err!(InvalidInput: FileNotSupported, os file_path.file_name().unwrap()))
+                return Err(new_err!(InvalidInput: InvalidFile, "Not encrypted"))
         }
 
         let bytes = io::read_bytes(file_path)?;

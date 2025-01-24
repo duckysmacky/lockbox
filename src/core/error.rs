@@ -3,8 +3,8 @@
 //! Consult every error's doc for more details
 #![allow(irrefutable_let_patterns)]
 
+use std::path::PathBuf;
 use std::{fmt, io};
-use std::ffi::OsString;
 use std::fmt::{Display, Formatter};
 use std::io::ErrorKind;
 use crate::{log_error, log_warn};
@@ -22,9 +22,8 @@ pub type Result<T> = std::result::Result<T, Error>;
 #[repr(i32)]
 #[derive(Debug)]
 pub enum Error {
-    /// Error related to accessing, reading or writing files. Wrapper for the std::Error and is
-    /// converted from it
-    IOError(IOErrorContainer),
+    /// Error related to accessing, reading, writing files and anything to do with filesystem.
+    IOError(IOErrorKind),
     /// Error related to the user's operating system. Any failed operation which was
     /// based on underlying OS will result in this error. This could be failed retrieval of an
     /// environment variable, unable to access native toolchain or similar
@@ -82,7 +81,7 @@ impl Error {
 impl Display for Error {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            Error::IOError(e) => write!(f, "IO error ({}): {}", e.kind, e.message),
+            Error::IOError(e) => write!(f, "IO error: {}", e),
             Error::OSError(e) => write!(f, "OS error: {}", e),
             Error::InvalidData(e) => write!(f, "Invalid data: {}", e),
             Error::InvalidInput(e) => write!(f, "Invalid input provided: {}", e),
@@ -96,10 +95,12 @@ impl Display for Error {
 
 impl From<io::Error> for Error {
     fn from(err: io::Error) -> Self {
-        Error::IOError(IOErrorContainer {
-            kind: err.kind(),
-            message: err.to_string(),
-        })
+        Error::IOError(IOErrorKind::StdError(
+            IOErrorContainer {
+                kind: err.kind(),
+                message: err.to_string(),
+            }
+        ))
     }
 }
 
@@ -122,6 +123,27 @@ impl From<toml::de::Error> for Error {
 }
 
 #[derive(Debug)]
+pub enum IOErrorKind {
+    /// The std IO error (std::io::Error)
+    StdError(IOErrorContainer),
+    /// The privided file was not found
+    NotFound(PathBuf),
+    /// The privided file is not supported for operations
+    NotSupported(PathBuf),
+}
+
+impl Display for IOErrorKind {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            IOErrorKind::StdError(e) => write!(f, "{} - {}", e.kind, e.message),
+            IOErrorKind::NotFound(p) => write!(f, "File \"{}\" not found", p.display()),
+            IOErrorKind::NotSupported(p) => write!(f, "File \"{}\" is not supported", p.display()),
+        }
+    }
+}
+
+#[derive(Debug)]
+/// Works like a wrapper above the std::Error. Automatically converted from it
 pub struct IOErrorContainer {
     pub kind: ErrorKind,
     pub message: String,
@@ -134,38 +156,39 @@ pub enum OSErrorKind {
 
 impl Display for OSErrorKind {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        match self { OSErrorKind::EnvVariableUnavailable(s) => write!(f, "Unable to get the \"{}\" environment variable", s), }
+        match self {
+            OSErrorKind::EnvVariableUnavailable(s) => write!(f, "Unable to get the \"{}\" environment variable", s),
+        }
     }
 }
 
 #[derive(Debug)]
 pub enum InvalidDataKind {
+    /// The provided hex is invalid in some form. This could be its length,
+    /// incorrect bytes or anything else related to hex
     InvalidHex(String),
 }
 
 impl Display for InvalidDataKind {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            InvalidDataKind::InvalidHex(s) => write!(f, "Invalid hex number provided ({})", s),
+            InvalidDataKind::InvalidHex(s) => write!(f, "Invalid hex number ({})", s),
         }
     }
 }
 
 #[derive(Debug)]
 pub enum InvalidInputKind {
-    FileAlreadyEncrypted(OsString),
-    FileNotEncrypted(OsString),
-    FileNotSupported(OsString),
-    FileNotFound(OsString),
+    /// The provided file is invalid. This could mean that the file was
+    /// already encrypted, decrypted or anything else which would mark it
+    /// invalid in a given context. 
+    InvalidFile(String),
 }
 
 impl Display for InvalidInputKind {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            InvalidInputKind::FileAlreadyEncrypted(s) => write!(f, "File {:?} is already encrypted", s),
-            InvalidInputKind::FileNotEncrypted(s) => write!(f, "File {:?} is not encrypted", s),
-            InvalidInputKind::FileNotSupported(s) => write!(f, "File {:?} is not supported", s),
-            InvalidInputKind::FileNotFound(s) => write!(f, "File {:?} not found", s),
+            InvalidInputKind::InvalidFile(s) => write!(f, "Invalid file provided ({})", s),
         }
     }
 }
@@ -260,10 +283,8 @@ pub fn print_error(err: &Error) {
 /// (`SomeErrorKind`) after the colon: `new_err!(ProfileError, NotSelected)`. 
 /// 
 /// An error message should also be supplied if the error *kind* requires one:
-/// `new_err!(ProfileError, NotFound, "message")`. 
-/// 
-/// If the error requires an `OsString` instead of a basic `String`, append `os` token before the
-/// error message: `new_err!(InvalidInput: UnsupportedFile, os "message")`
+/// `new_err!(ProfileError, NotFound, "message")`. Automatically converts to needed message
+/// type if possible
 #[macro_export]
 macro_rules! new_err {
     ($err:ident: $kind:ident) => {
@@ -281,15 +302,6 @@ macro_rules! new_err {
             paste! {
                 use crate::core::error::{Error, [<$err Kind>]};
                 Error::$err([<$err Kind>]::$kind($msg.to_string()))
-            }
-        }
-    };
-    ($err:ident: $kind:ident, os $msg:expr) => {
-        {
-            use paste::paste;
-            paste! {
-                use crate::core::error::{Error, [<$err Kind>]};
-                Error::$err([<$err Kind>]::$kind($msg.to_os_string()))
             }
         }
     };
@@ -410,7 +422,6 @@ macro_rules! exits_on {
 
 #[cfg(test)]
 mod tests {
-    use std::ffi::OsStr;
     use super::*;
 
     #[test]
@@ -437,8 +448,5 @@ mod tests {
         
         let str_err = new_err!(InvalidData: InvalidHex, "placeholder");
         assert!(err_cmp!(str_err, InvalidData, InvalidHex()));
-        
-        let os_str_err = new_err!(InvalidInput: FileNotSupported, os OsStr::new("filename"));
-        assert!(err_cmp!(os_str_err, InvalidInput, FileNotSupported()));
     }
 }

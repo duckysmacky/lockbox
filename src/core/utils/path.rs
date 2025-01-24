@@ -3,7 +3,8 @@
 use std::{ffi::OsString, fs};
 use std::path::{Path, PathBuf};
 use crate::core::encryption::boxfile;
-use crate::{Result, new_err, log_info, log_warn};
+use crate::core::error::IOErrorKind;
+use crate::{log_info, log_warn, Error, Result};
 
 /// Opens and parses provided path, returning a flattened list of all found paths. Verifies if the
 /// given paths exists. In case of a directory being provided returns all paths inside of it. Can
@@ -64,5 +65,5 @@ fn search_for_original(dir_path: &Path, target_name: OsString) -> Result<PathBuf
         }
     }
 
-    Err(new_err!(InvalidInput: FileNotFound, os target_name))
+    Err(Error::IOError(IOErrorKind::NotFound(target_name.into())))
 }

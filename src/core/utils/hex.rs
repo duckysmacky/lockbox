@@ -36,7 +36,7 @@ pub fn string_to_bytes(hex_string: &str) -> Result<Vec<u8>> {
             return Err(new_err!(InvalidData: InvalidHex, format!("Invalid byte \"{}{}\"", c1, c2)))
         }
         
-        // we can just unwrap this too since we sanity-checked the characters beforehand
+        // we can just unwrap this too since we sanity-checked the characmers beforehand
         hex_bytes[i / 2] = u8::from_str_radix(&format!("{}{}", c1, c2), 16).unwrap();
 
         i += 2;

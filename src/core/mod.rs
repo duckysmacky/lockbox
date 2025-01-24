@@ -25,7 +25,7 @@ pub fn encrypt(password: &str, input_path: &Path, opts: &mut options::Encryption
 
     if let Some(extension) = input_path.extension() {
         if extension == "box" {
-            return Err(new_err!(InvalidInput: FileAlreadyEncrypted, os input_path.file_name().unwrap()))
+            return Err(new_err!(InvalidInput: InvalidFile, "Already encrypted"))
         }
     }
 
@@ -215,7 +215,7 @@ pub fn set_key(password: &str, new_key: &str) -> Result<()> {
     let new_key = utils::hex::string_to_bytes(new_key)?;
     
     if new_key.len() != 32 {
-        return Err(new_err!(InvalidData: InvalidHex, "The provided hex is not a 32-byte key"))
+        return Err(new_err!(InvalidData: InvalidHex, "Provided hex is not a 32-byte key"))
     }
     
     let new_key = Key::try_from(&new_key[..32]).unwrap();
