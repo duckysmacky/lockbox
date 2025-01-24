@@ -1,4 +1,4 @@
-name: MacOS Build
+name: MacOS
 
 on:
   push:
@@ -17,8 +17,11 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
+    - name: Update dependencies
+      run: cargo update
+
     - name: Build binary
-      run: cargo build
+      run: cargo build --verbose --release
 
     - name: Run tests
-      run: cargo test -- --test-threads=1 --show-output
+      run: cargo test --verbose -- --test-threads=1 --show-output
