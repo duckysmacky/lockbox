@@ -14,7 +14,7 @@
 use super::auth;
 use super::io::{read_file, write_file};
 use crate::core::encryption::cipher;
-use crate::{log_debug, log_info, new_err, Key, Result};
+use crate::{log_debug, log_info, new_err, Key, Nonce, Result};
 use serde::{Deserialize, Serialize};
 use std::io::{self};
 use std::path::PathBuf;
@@ -93,9 +93,11 @@ impl LockboxProfiles {
 
     /// Sets the current profile to profile which name was supplied. Returns an error if given
     /// profile doesn't exist
-    pub fn set_current(&mut self, profile_name: &str) -> Result<()> {
+    pub fn set_current(&mut self, password: &str, profile_name: &str) -> Result<()> {
         log_debug!("Setting current profile to \"{}\"", profile_name);
 
+        let profile = self.find_profile(profile_name)?;
+        profile.verify_password(password)?;
         self.current_profile = Some(profile_name.to_string());
         self.save()?;
 
@@ -104,11 +106,12 @@ impl LockboxProfiles {
     }
 
     /// Deletes a profile with provided name
-    pub fn delete_profile(&mut self, profile_name: &str) -> Result<()> {
-        log_debug!("Deleting profile with name \"{}\"", profile_name);
+    pub fn delete_profile(&mut self, profile_password: &str, profile_name: &str) -> Result<()> {
+        log_debug!("Trying to delete a profile with name \"{}\"", profile_name);
 
         for (i, profile) in self.profiles.iter().enumerate() {
             if profile.name == profile_name {
+                profile.verify_password(profile_password)?;
                 self.profiles.remove(i);
                 self.current_profile = {
                     if self.profiles.is_empty() {
@@ -118,6 +121,7 @@ impl LockboxProfiles {
                     }
                 };
                 self.save()?;
+                log_debug!("Deleted profile \"{}\"", profile_name);
                 return Ok(())
             }
         }
@@ -185,7 +189,7 @@ impl LockboxProfiles {
     /// Writes to the profile data file. Overwrites old data
     pub fn save(&self) -> Result<()> {
         log_debug!("Saving profiles data to \"profiles.json\"");
-        let json_data = serde_json::to_string(&self)?;
+        let json_data = serde_json::to_string_pretty(&self)?;
 
         write_file(&self.file_path, &json_data, true)?;
         Ok(())
@@ -195,9 +199,14 @@ impl LockboxProfiles {
 /// Struct containing main information about a profile
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Profile {
+    /// Name of the profile
     pub name: String,
-    pub key: Key,
-    password_hash: String
+    /// Profile's password stored in a hashed form
+    password_hash: String,
+    /// Per-profile nonce used to perform encryption operations on profile's key
+    nonce: Nonce,
+    /// Profile's encryption key stored in an encrypted format
+    key: Vec<u8>,
 }
 
 impl Profile {
@@ -205,22 +214,46 @@ impl Profile {
         name: &str,
         password: &str
     ) -> Result<Self> {
-        let (hash, _salt) = auth::hash_password(password)?;
+        let (password_hash, password_key) = auth::hash_password(password)?;
+        let key = cipher::generate_key();
+        let nonce = cipher::generate_nonce();
+        let encrypted_key = cipher::encrypt(&password_key, &nonce, &key)?;
+
         Ok(Profile {
             name: name.to_string(),
-            key: cipher::generate_key(),
-            password_hash: hash,
+            key: encrypted_key,
+            nonce,
+            password_hash,
         })
     }
 
-    /// Checks whether the provided password is valid for the profile
-    pub fn verify_password(&self, password: &str) -> Result<bool> {
-        auth::verify_password(&self.password_hash, password)
+    /// Checks whether the provided password is valid for the profile by verifying it with the hash
+    pub fn verify_password(&self, password: &str) -> Result<()> {
+        match auth::verify_password(&self.password_hash, password) {
+            Ok(_) => Ok(()),
+            Err(err) => Err(err)
+        }
     }
 
-    /// Sets a new key for the profile
-    pub fn set_key(&mut self, key: Key) {
-        self.key = key;
+    /// Sets a new key for the profile. Encrypts provided Key based on password and saves it to the
+    /// profile in the encrypted form
+    pub fn set_key(&mut self, password: &str, key: Key) -> Result<()> {
+        let password_key = auth::get_password_key(&self.password_hash, password)?;
+        let encrypted_key = cipher::encrypt(&password_key, &self.nonce, &key)?;
+
+        self.key = encrypted_key;
+        Ok(())
+    }
+
+    /// Fetches encryption key for the current profile. Decrypts contained key based on the password
+    /// after verifying it and returns it
+    pub fn get_key(&self, password: &str) -> Result<Key> {
+        let encrypted_key = self.key.clone();
+        let password_key = auth::get_password_key(&self.password_hash, password)?;
+        let key = cipher::decrypt(&password_key, &self.nonce, &encrypted_key)?.try_into()
+            .map_err(|_| new_err!(InvalidData: InvalidLength, "encryption key"))?;
+
+        Ok(key)
     }
 }
 

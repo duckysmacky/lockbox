@@ -5,18 +5,19 @@ use crate::{Key, Result};
 use crate::core::data;
 
 /// Gets the key for the current profile
-pub fn get_key() -> Result<Key> {
+pub fn get_key(password: &str) -> Result<Key> {
     log_debug!("Getting encryption key from current profile");
     let mut profiles = data::get_profiles()?;
     let profile = profiles.get_current_profile()?;
-    Ok(profile.key)
+    let key = profile.get_key(password)?;
+    Ok(key)
 }
 
 /// Sets the key for the current profile
-pub fn set_key(new_key: Key) -> Result<()> {
+pub fn set_key(password: &str, new_key: Key) -> Result<()> {
     log_debug!("Setting a new encryption key for current profile");
     let mut profiles = data::get_profiles()?;
     let profile = profiles.get_current_profile()?;
-    profile.set_key(new_key);
+    profile.set_key(password, new_key)?;
     profiles.save()
 }

@@ -27,7 +27,6 @@ pub fn read_file(file_path: &Path) -> Result<String> {
 
     file.read_to_string(&mut file_contents)?;
 
-    log_debug!("Got file data: {}", &file_contents);
     Ok(file_contents)
 }
 
@@ -59,6 +58,5 @@ pub fn write_file(path: &Path, contents: &str, truncate: bool) -> Result<()> {
     file.write_all(contents.as_bytes())?;
     file.flush()?;
 
-    log_debug!("Wrote {} to file", contents);
     Ok(())
 }

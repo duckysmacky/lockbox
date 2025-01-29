@@ -16,13 +16,7 @@ pub mod encryption;
 /// and get access to current profile. Additional options can be supplied to change the encryption
 /// process
 pub fn encrypt(password: &str, input_path: &Path, opts: &mut options::EncryptionOptions) -> Result<()> {
-    let mut profiles = data::get_profiles()?;
-    let profile = profiles.get_current_profile()?;
-
-    if !profile.verify_password(password)? {
-        return Err(new_err!(ProfileError: AuthenticationFailed))
-    }
-
+    log_info!("Starting encryption...");
     if let Some(extension) = input_path.extension() {
         if extension == "box" {
             return Err(new_err!(InvalidInput: InvalidFile, "Already encrypted"))
@@ -30,7 +24,7 @@ pub fn encrypt(password: &str, input_path: &Path, opts: &mut options::Encryption
     }
 
     let mut boxfile = boxfile::Boxfile::new(input_path)?;
-    let key = keys::get_key()?;
+    let key = keys::get_key(password)?;
     boxfile.encrypt_data(&key)?;
 
     let mut output_path = match opts.output_paths {
@@ -64,15 +58,9 @@ pub fn encrypt(password: &str, input_path: &Path, opts: &mut options::Encryption
 /// verify and get access to current profile. Additional options can be supplied to change the
 /// decryption process
 pub fn decrypt(password: &str, input_path: &Path, opts: &mut options::DecryptionOptions) -> Result<()> {
-    let mut profiles = data::get_profiles()?;
-    let profile = profiles.get_current_profile()?;
-
-    if !profile.verify_password(password)? {
-        return Err(new_err!(ProfileError: AuthenticationFailed))
-    }
-
+    log_info!("Starting decryption...");
     let mut boxfile = boxfile::Boxfile::parse(&input_path)?;
-    let key = keys::get_key()?;
+    let key = keys::get_key(password)?;
     boxfile.decrypt_data(&key)?;
     let (original_name, original_extension) = boxfile.file_info();
     let file_data = boxfile.file_data()?;
@@ -125,25 +113,16 @@ pub fn create_profile(password: &str, profile_name: &str) -> Result<()> {
 }
 
 pub fn delete_profile(password: &str, profile_name: &str) -> Result<()> {
-    let mut profiles = data::get_profiles()?;
-    let profile = profiles.get_current_profile()?;
-
-    if !profile.verify_password(password)? {
-        return Err(new_err!(ProfileError: AuthenticationFailed))
-    }
-
     log_info!("Deleting profile \"{}\"", profile_name);
-    profiles.delete_profile(profile_name)?;
+    let mut profiles = data::get_profiles()?;
+
+    profiles.delete_profile(password, profile_name)?;
     Ok(())
 }
 
 pub fn select_profile(password: &str, profile_name: &str) -> Result<()> {
+    log_info!("Switching profile to \"{}\"", profile_name);
     let mut profiles = data::get_profiles()?;
-    let profile = profiles.find_profile(profile_name)?;
-
-    if !profile.verify_password(password)? {
-        return Err(new_err!(ProfileError: AuthenticationFailed))
-    }
 
     if let Ok(profile) = profiles.get_current_profile() {
         if profile_name == profile.name {
@@ -151,8 +130,7 @@ pub fn select_profile(password: &str, profile_name: &str) -> Result<()> {
         }
     }
 
-    log_info!("Switching profile to \"{}\"", profile_name);
-    profiles.set_current(profile_name)?;
+    profiles.set_current(password, profile_name)?;
     Ok(())
 }
 
@@ -174,43 +152,23 @@ pub fn get_profiles() -> Result<Vec<String>> {
 }
 
 pub fn new_key(password: &str) -> Result<()> {
-    let mut profiles = data::get_profiles()?;
-    let profile = profiles.get_current_profile()?;
-
-    if !profile.verify_password(password)? {
-        return Err(new_err!(ProfileError: AuthenticationFailed))
-    }
-
     log_info!("Generating a new encryption key for current profile");
-    keys::set_key(cipher::generate_key())?;
+    let key = cipher::generate_key();
+    keys::set_key(password, key)?;
     Ok(())
 }
 
 pub fn get_key(password: &str, opts: options::GetKeyOptions) -> Result<String> {
-    let mut profiles = data::get_profiles()?;
-    let profile = profiles.get_current_profile()?;
-
-    if !profile.verify_password(password)? {
-        return Err(new_err!(ProfileError: AuthenticationFailed))
-    }
-
     log_info!("Retrieving the encryption key from the current profile");
-    let key = keys::get_key()?;
+    let key = keys::get_key(password)?;
+    
     if !opts.byte_format {
-        return Ok(utils::hex::bytes_to_string(&key));
+        return Ok(format!("{:?}", key))
     }
-
-    Ok(format!("{:?}", key))
+    Ok(utils::hex::bytes_to_string(&key))
 }
 
 pub fn set_key(password: &str, new_key: &str) -> Result<()> {
-    let mut profiles = data::get_profiles()?;
-    let profile = profiles.get_current_profile()?;
-
-    if !profile.verify_password(password)? {
-        return Err(new_err!(ProfileError: AuthenticationFailed))
-    }
-
     log_info!("Setting the encryption key from the current profile");
     let new_key = utils::hex::string_to_bytes(new_key)?;
     
@@ -219,7 +177,7 @@ pub fn set_key(password: &str, new_key: &str) -> Result<()> {
     }
     
     let new_key = Key::try_from(&new_key[..32]).unwrap();
-    keys::set_key(new_key)?;
+    keys::set_key(password, new_key)?;
     Ok(())
 }
 
