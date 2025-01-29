@@ -167,12 +167,15 @@ pub enum InvalidDataKind {
     /// The provided hex is invalid in some form. This could be its length,
     /// incorrect bytes or anything else related to hex
     InvalidHex(String),
+    /// The provided hash is invalid
+    BadHash(String),
 }
 
 impl Display for InvalidDataKind {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
             InvalidDataKind::InvalidHex(s) => write!(f, "Invalid hex number ({})", s),
+            InvalidDataKind::BadHash(s) => write!(f, "Invalid hash provided ({})", s),
         }
     }
 }

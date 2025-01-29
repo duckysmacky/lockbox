@@ -214,7 +214,7 @@ impl Profile {
     }
 
     /// Checks whether the provided password is valid for the profile
-    pub fn verify_password(&self, password: &str) -> bool {
+    pub fn verify_password(&self, password: &str) -> Result<bool> {
         auth::verify_password(&self.password_hash, password)
     }
 

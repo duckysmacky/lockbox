@@ -19,7 +19,7 @@ pub fn encrypt(password: &str, input_path: &Path, opts: &mut options::Encryption
     let mut profiles = data::get_profiles()?;
     let profile = profiles.get_current_profile()?;
 
-    if !profile.verify_password(password) {
+    if !profile.verify_password(password)? {
         return Err(new_err!(ProfileError: AuthenticationFailed))
     }
 
@@ -67,7 +67,7 @@ pub fn decrypt(password: &str, input_path: &Path, opts: &mut options::Decryption
     let mut profiles = data::get_profiles()?;
     let profile = profiles.get_current_profile()?;
 
-    if !profile.verify_password(password) {
+    if !profile.verify_password(password)? {
         return Err(new_err!(ProfileError: AuthenticationFailed))
     }
 
@@ -128,7 +128,7 @@ pub fn delete_profile(password: &str, profile_name: &str) -> Result<()> {
     let mut profiles = data::get_profiles()?;
     let profile = profiles.get_current_profile()?;
 
-    if !profile.verify_password(password) {
+    if !profile.verify_password(password)? {
         return Err(new_err!(ProfileError: AuthenticationFailed))
     }
 
@@ -141,7 +141,7 @@ pub fn select_profile(password: &str, profile_name: &str) -> Result<()> {
     let mut profiles = data::get_profiles()?;
     let profile = profiles.find_profile(profile_name)?;
 
-    if !profile.verify_password(password) {
+    if !profile.verify_password(password)? {
         return Err(new_err!(ProfileError: AuthenticationFailed))
     }
 
@@ -177,7 +177,7 @@ pub fn new_key(password: &str) -> Result<()> {
     let mut profiles = data::get_profiles()?;
     let profile = profiles.get_current_profile()?;
 
-    if !profile.verify_password(password) {
+    if !profile.verify_password(password)? {
         return Err(new_err!(ProfileError: AuthenticationFailed))
     }
 
@@ -190,7 +190,7 @@ pub fn get_key(password: &str, opts: options::GetKeyOptions) -> Result<String> {
     let mut profiles = data::get_profiles()?;
     let profile = profiles.get_current_profile()?;
 
-    if !profile.verify_password(password) {
+    if !profile.verify_password(password)? {
         return Err(new_err!(ProfileError: AuthenticationFailed))
     }
 
@@ -207,7 +207,7 @@ pub fn set_key(password: &str, new_key: &str) -> Result<()> {
     let mut profiles = data::get_profiles()?;
     let profile = profiles.get_current_profile()?;
 
-    if !profile.verify_password(password) {
+    if !profile.verify_password(password)? {
         return Err(new_err!(ProfileError: AuthenticationFailed))
     }
 

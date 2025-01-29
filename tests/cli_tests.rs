@@ -159,8 +159,8 @@ fn test_key_setting() {
     
     // Generate a random 64-byte HEX string
     const CHARSET: &[u8] = b"0123456789ABCDEF";
-    let mut rng = rand::thread_rng();
-    let valid_key = iter::repeat_with(|| CHARSET[rng.gen_range(0..16)] as char)
+    let mut rng = rand::rng();
+    let valid_key = iter::repeat_with(|| CHARSET[rng.random_range(0..16)] as char)
         .take(64)
         .collect::<String>();
     let invalid_key = "KY&*";

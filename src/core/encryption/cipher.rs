@@ -1,7 +1,9 @@
 //! Contains methods related to encryption and decryption, key and nonce generation
 
-use chacha20poly1305::{aead::{Aead, KeyInit}, AeadCore, ChaCha20Poly1305};
-use rand::rngs::OsRng;
+use chacha20poly1305::{
+    aead::{OsRng, Aead, KeyInit},
+    AeadCore, ChaCha20Poly1305
+};
 use crate::{new_err, Result};
 
 /// Type representing a basic 32-byte encryption key
