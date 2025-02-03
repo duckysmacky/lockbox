@@ -73,6 +73,10 @@ The complete list of commands can be viewed with `lockbox --help`. Below are sho
 
 ### Encrypting files
 
+<div>
+    <img width="30%" alt="encryption" src="media/gif/encryption-short.gif">
+</div>
+
 ```bash
 lockbox box <PATH>...
 ```
@@ -83,6 +87,10 @@ Output files will be encrypted and formatted into a custom `.box` file type with
 can specify the output location for each file with a `-o` flag
 
 ### Decrypting files
+
+<div>
+    <img width="30%" alt="decryption" src="media/gif/decryption-short.gif">
+</div>
 
 ```bash
 lockbox unbox <PATH>...
@@ -96,6 +104,10 @@ extension
 
 ### Configuring profiles
 
+<div>
+    <img width="30%" alt="profiles" src="media/gif/profile-creation-long.gif">
+</div>
+
 ```bash
 lockbox profile <ACTION> <NAME>
 ```
@@ -104,8 +116,25 @@ A new profile can be created with the `profile new` command. Each profile should
 asked every time a profile-related feature is used by the user (e.g. encryption, as it requires profile's encryption
 key).
 
-Other profile manipulation commands include `select` which profile to use, `delete` to delete one and `list` to list
+Other profile manipulation actions include `select` which profile to use, `delete` to delete one and `list` to list
 all other existing profiles.
+
+### Manipulating encryption keys
+
+<div>
+    <img width="30%" alt="key" src="media/gif/keys-long.gif">
+</div>
+
+```bash
+lockbox key <ACTION>
+```
+
+The `key` subcommand is used to control the profile's stored encryption key. It can be outputted it in a formatted hex
+string using the `key get` command. Use the `-b` flag to output it as an array of bytes.
+
+A new key can be created with the `key new` command, generating a fresh encryption key and overwriting the old one. A
+key can also be set from the outside (using a hex string) using the `key set <KEY>` command. The key has to be a 32-byte
+key to be accepted (refer to `key get` command's output for how the key should look to be valid).
 
 ## 🧰 Development
 
