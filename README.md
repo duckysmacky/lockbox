@@ -74,7 +74,7 @@ The complete list of commands can be viewed with `lockbox --help`. Below are sho
 ### Encrypting files
 
 <div>
-    <img width="30%" alt="encryption" src="media/gif/encryption-short.gif">
+    <img width="50%" alt="encryption" src="media/gif/encryption-short.gif">
 </div>
 
 ```bash
@@ -89,7 +89,7 @@ can specify the output location for each file with a `-o` flag
 ### Decrypting files
 
 <div>
-    <img width="30%" alt="decryption" src="media/gif/decryption-short.gif">
+    <img width="50%" alt="decryption" src="media/gif/decryption-short.gif">
 </div>
 
 ```bash
@@ -105,7 +105,7 @@ extension
 ### Configuring profiles
 
 <div>
-    <img width="30%" alt="profiles" src="media/gif/profile-creation-long.gif">
+    <img width="50%" alt="profiles" src="media/gif/profile-creation-long.gif">
 </div>
 
 ```bash
@@ -122,7 +122,7 @@ all other existing profiles.
 ### Manipulating encryption keys
 
 <div>
-    <img width="30%" alt="key" src="media/gif/keys-long.gif">
+    <img width="50%" alt="key" src="media/gif/keys-long.gif">
 </div>
 
 ```bash
