@@ -122,7 +122,7 @@ all other existing profiles.
 ### Manipulating encryption keys
 
 <div>
-    <img width="50%" alt="key" src="media/gif/keys-long.gif">
+    <img width="50%" alt="key" src="media/gif/key-set.gif">
 </div>
 
 ```bash
