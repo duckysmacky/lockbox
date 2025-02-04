@@ -1,7 +1,7 @@
-//! # Lockbox API
+//! # Databoxer API
 //!
 //! This library functions like an API between the CLI and GUI wrappers and the rest of the core
-//! program code. It contains all the main functions related to the Lockbox's functionality, like
+//! program code. It contains all the main functions related to the Databoxer's functionality, like
 //! encryption, decryption, key and profile management.
 
 pub use core::error::{Error, Result};

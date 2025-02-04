@@ -2,7 +2,7 @@
 
 use std::{fs, io};
 use std::path::Path;
-use lockbox::Error;
+use databoxer::Error;
 
 pub mod command;
 
@@ -13,13 +13,13 @@ pub const TEST_DIR: &str = "files/test";
 
 /// Global test environment setup (must be run before each test)
 pub fn setup() {
-    lockbox::create_profile(PASSWORD, PROFILE_NAME)
+    databoxer::create_profile(PASSWORD, PROFILE_NAME)
         .unwrap_or_else(|err| match err {
             Error::ProfileError(_) => println!("{}", err),
             _ => panic!("Unable to create test profile: {}", err)
         });
 
-    lockbox::select_profile(PASSWORD, PROFILE_NAME)
+    databoxer::select_profile(PASSWORD, PROFILE_NAME)
         .unwrap_or_else(|err| match err {
             Error::ProfileError(_) => println!("{}", err),
             _ => panic!("Unable to select test profile: {}", err)
@@ -31,7 +31,7 @@ pub fn setup() {
 
 /// Global test environment cleanup (must be run after each test)
 pub fn cleanup() {
-    lockbox::delete_profile(PASSWORD, PROFILE_NAME)
+    databoxer::delete_profile(PASSWORD, PROFILE_NAME)
         .unwrap_or_else(|err| match err {
             Error::ProfileError(_) => println!("{}", err),
             _ => panic!("Unable to delete test profile: {}", err)

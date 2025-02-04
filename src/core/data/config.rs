@@ -1,6 +1,6 @@
-//! Contains everything related to Lockbox configuration
+//! Contains everything related to Databoxer configuration
 //! 
-//! Provides a base `LockboxConfig` struct which contains user-defined configuration for the
+//! Provides a base `DataboxerConfig` struct which contains user-defined configuration for the
 //! program, which is set to default values on initialization. It is represented as a `config.toml`
 //! file on the disk, which is located in the program's default config directory.
 //! 
@@ -15,11 +15,11 @@ use crate::{log_debug, log_info};
 use crate::core::error::Result;
 
 /// Name of the main configuration file
-const CONFIG_FILE_NAME: &str = "lockbox.toml";
+const CONFIG_FILE_NAME: &str = "databoxer.toml";
 
 /// Struct representing a TOML Configuration file
 #[derive(Serialize, Deserialize, Debug)]
-pub struct LockboxConfig {
+pub struct DataboxerConfig {
     pub general: GeneralConfig,
     pub encryption: EncryptionConfig,
     pub storage: StorageConfig,
@@ -39,16 +39,16 @@ pub struct EncryptionConfig { }
 #[derive(Serialize, Deserialize, Debug)]
 pub struct StorageConfig { }
 
-impl LockboxConfig {
+impl DataboxerConfig {
     /// Imports self from the stored "config.toml" file. In case of the file missing, generates a
     /// new file with the default configuration
     pub fn import(config_directory: PathBuf) -> Result<Self> {
-        log_debug!("Importing Lockbox config");
+        log_debug!("Importing Databoxer config");
         let config_file = config_directory.join(CONFIG_FILE_NAME);
 
         let config = match read_file(&config_file) {
             Ok(file_data) => {
-                let mut config: LockboxConfig = toml::from_str(&file_data)?;
+                let mut config: DataboxerConfig = toml::from_str(&file_data)?;
                 config.file_path = config_file;
                 config
             },
@@ -68,8 +68,8 @@ impl LockboxConfig {
     /// Bare-minimum constructor to use in case of file not being available to import from
     fn new(
         file_path: PathBuf
-    ) -> LockboxConfig {
-        LockboxConfig {
+    ) -> DataboxerConfig {
+        DataboxerConfig {
             general: GeneralConfig { },
             encryption: EncryptionConfig { },
             storage: StorageConfig { },
@@ -99,7 +99,7 @@ mod tests {
     /// default configuration to it
     fn write_default_config() {
         let config_directory = os::get_config_dir().expect("Cannot get config directory");
-        let config = LockboxConfig::import(config_directory);
+        let config = DataboxerConfig::import(config_directory);
 
         assert!(config.is_ok())
     }

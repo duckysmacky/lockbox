@@ -1,6 +1,6 @@
-//! Module containing everything related to Lockbox profile management. 
+//! Module containing everything related to Databoxer profile management.
 //! 
-//! Provides a base struct `LockboxProfiles` used for holding information about user's profiles
+//! Provides a base struct `DataboxerProfiles` used for holding information about user's profiles
 //! which is represented as a `profiles.toml` file on the disk, which is located in the program's 
 //! default data directory. 
 //! 
@@ -25,7 +25,7 @@ const PROFILES_FILE_NAME: &str = "profiles.json";
 /// Struct holding all the needed profile information for the program. Saved on the disk as a JSON
 /// file
 #[derive(Serialize, Deserialize, Debug)]
-pub struct LockboxProfiles {
+pub struct DataboxerProfiles {
     current_profile: Option<String>,
     profiles: Vec<Profile>,
     #[serde(skip)]
@@ -33,16 +33,16 @@ pub struct LockboxProfiles {
 }
 
 /// Object-driven approach
-impl LockboxProfiles {
+impl DataboxerProfiles {
     /// Imports self from the stored "profiles.json" file in the program's data directory. In case
     /// of the file missing, generates a new object with default empty values
     pub fn import(data_directory: PathBuf) -> Result<Self> {
-        log_debug!("Importing Lockbox profiles");
+        log_debug!("Importing Databoxer profiles");
         let profiles_file = data_directory.join(PROFILES_FILE_NAME);
 
         let profiles = match read_file(&profiles_file) {
             Ok(file_data) => {
-                let mut profiles: LockboxProfiles = serde_json::from_str(&file_data)?;
+                let mut profiles: DataboxerProfiles = serde_json::from_str(&file_data)?;
                 profiles.file_path = profiles_file;
                 profiles
             },
@@ -63,7 +63,7 @@ impl LockboxProfiles {
     fn new(
         file_path: PathBuf
     ) -> Self {
-        LockboxProfiles {
+        DataboxerProfiles {
             current_profile: None,
             profiles: vec![],
             file_path
@@ -268,7 +268,7 @@ mod tests {
     /// information
     fn write_default_profiles() {
         let data_directory = os::get_data_dir().expect("Cannot get data directory");
-        let config = LockboxProfiles::import(data_directory);
+        let config = DataboxerProfiles::import(data_directory);
 
         assert!(config.is_ok())
     }

@@ -1,30 +1,30 @@
 <div align="center">
-    <img alt="lockbox" src="media/icons/icon_3d.png">
+    <img alt="databoxer" src="media/icons/icon_3d.png">
 </div>
 
-<h1 align="center">Lockbox</h1>
+<h1 align="center">Databoxer</h1>
 
 > A data encryption program, which focuses on speed, safety and user-friendliness
 
-![windows](https://github.com/duckysmacky/lockbox/actions/workflows/windows.yml/badge.svg)
-![linux](https://github.com/duckysmacky/lockbox/actions/workflows/linux.yml/badge.svg)
-![macos](https://github.com/duckysmacky/lockbox/actions/workflows/macos.yml/badge.svg)
+![windows](https://github.com/duckysmacky/databoxer/actions/workflows/windows.yml/badge.svg)
+![linux](https://github.com/duckysmacky/databoxer/actions/workflows/linux.yml/badge.svg)
+![macos](https://github.com/duckysmacky/databoxer/actions/workflows/macos.yml/badge.svg)
 
 *The project is still very work-in-progress and the mentioned features could very well change during development*
 
 ## 💡 About
 
-Lockbox aims to be a lightweight cross-platform solution for file encryption
+Databoxer aims to be a lightweight cross-platform solution for file encryption
 
-Unlike its competitors, Lockbox is aimed at making file encryption easy and accessible by focusing on user-friendliness
+Unlike its competitors, Databoxer is aimed at making file encryption easy and accessible by focusing on user-friendliness
 and simplicity, while also being efficient and safe. **It is not a drop-in replacement** for already long-existing
 encryption tools, such as *Bitlocker*, but instead more of an alternative (*could be a subject to change*).
 
 It is aimed at both average and more advanced users. Possible use cases can range from simple local data protection 
 and access restriction to wireless data transfer and removable drive safety insurance. It's up to the user to decide
-how to use the program, which is one of the Lockbox's key principles: to **be flexible and efficient**.
+how to use the program, which is one of the Databoxer's key principles: to **be flexible and efficient**.
 
-Lockbox operates based on the **ChaCha20** encryption algorithm in combination with the **Poly1305** universal hash
+Databoxer operates based on the **ChaCha20** encryption algorithm in combination with the **Poly1305** universal hash
 function to perform its encryption operations. It proved to be much more safe and fast than the most popular **AES**
 algorithm used in many other similar programs. The files are encrypted using a randomly generated 32-byte *encryption
 key* and per-file 12-byte *nonce*, which ensures ciphertext's uniqueness across different files.
@@ -33,12 +33,12 @@ key* and per-file 12-byte *nonce*, which ensures ciphertext's uniqueness across 
 
 ### 👤 Profile system
 
-One of the key features of Lockbox is its **profile management system**. The user of the application can create
+One of the key features of Databoxer is its **profile management system**. The user of the application can create
 different profiles in order to store keys and manage file. Each profile has a unique encryption key which is later
 used to encrypt/decrypt files and can be protected by user-defined password.
 
 The profile system is planned to have more features in the future, such as encrypted file tracking (e.g. showing
-how many files are currently encrypted with a given profile). Lockbox is also planned to have support to native
+how many files are currently encrypted with a given profile). Databoxer is also planned to have support to native
 toolchains, such as *GnuPG* and *Kleopatra* for UNIX-like systems and *CryptoAPI (CNG)* for Windows in order to
 ensure safer key storage.
 
@@ -68,7 +68,7 @@ checksum to verify file data integrity.
 Currently, the CLI is implemented and can be used for all major operations, but it is planned to have both *CLI* and *GUI*
 modes to appeal to a wider range of audience. 
 
-The complete list of commands can be viewed with `lockbox --help`. Below are shown just the most common commands.
+The complete list of commands can be viewed with `databoxer --help`. Below are shown just the most common commands.
 
 
 ### Encrypting files
@@ -78,7 +78,7 @@ The complete list of commands can be viewed with `lockbox --help`. Below are sho
 </div>
 
 ```bash
-lockbox box <PATH>...
+databoxer box <PATH>...
 ```
 
 Multiple paths can be supplied for multi-file encryption, as well as directories (with optional recursive feature `-R`)
@@ -93,7 +93,7 @@ can specify the output location for each file with a `-o` flag
 </div>
 
 ```bash
-lockbox unbox <PATH>...
+databoxer unbox <PATH>...
 ```
 
 Functions similarly to encryption: support for multiple paths and directories. The original file name can be supplied
@@ -109,7 +109,7 @@ extension
 </div>
 
 ```bash
-lockbox profile <ACTION> <NAME>
+databoxer profile <ACTION> <NAME>
 ```
 
 A new profile can be created with the `profile new` command. Each profile should have a name and password, which is
@@ -126,7 +126,7 @@ all other existing profiles.
 </div>
 
 ```bash
-lockbox key <ACTION>
+databoxer key <ACTION>
 ```
 
 The `key` subcommand is used to control the profile's stored encryption key. It can be outputted it in a formatted hex

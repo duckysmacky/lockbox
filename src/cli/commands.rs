@@ -165,7 +165,7 @@ pub fn handle_profile_list(_g_args: &ArgMatches, _args: &ArgMatches) {
 
     if count == 0 {
         log_warn!("No profiles found");
-        log_warn!("New profile can be created with \"lockbox profile new\"");
+        log_warn!("New profile can be created with \"databoxer profile new\"");
     } else {
         if count > 1 {log_success!("There are {} profiles found:", count);}
         else {log_success!("There is {} profile found:", count);}

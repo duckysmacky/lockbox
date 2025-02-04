@@ -19,7 +19,7 @@ mod header_info {
 }
 
 /// Struct representing a `boxfile` structure. A "boxfile" is the custom file 
-/// format for lockbox which contains the encrypted data of a file, alongside
+/// format for databoxer which contains the encrypted data of a file, alongside
 /// header with extra information and random padding. It is generated as a result
 /// of file encryption operation and has a `.box` extension.
 ///

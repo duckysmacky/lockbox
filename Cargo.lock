@@ -214,6 +214,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "databoxer"
+version = "0.1.0"
+dependencies = [
+ "argon2",
+ "bincode",
+ "chacha20poly1305",
+ "clap",
+ "lazy_static",
+ "paste",
+ "rand 0.9.0",
+ "serde",
+ "serde_json",
+ "sha2",
+ "toml",
+ "uuid",
+]
+
+[[package]]
 name = "digest"
 version = "0.10.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -311,24 +329,6 @@ name = "libc"
 version = "0.2.169"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b5aba8db14291edd000dfcc4d620c7ebfb122c613afb886ca8803fa4e128a20a"
-
-[[package]]
-name = "lockbox"
-version = "0.1.0"
-dependencies = [
- "argon2",
- "bincode",
- "chacha20poly1305",
- "clap",
- "lazy_static",
- "paste",
- "rand 0.9.0",
- "serde",
- "serde_json",
- "sha2",
- "toml",
- "uuid",
-]
 
 [[package]]
 name = "memchr"

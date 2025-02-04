@@ -11,11 +11,11 @@ pub fn get_data_dir() -> Result<PathBuf> {
     let mut data_dir = get_env_home()?;
 
     if cfg!(target_os = "windows") {
-        data_dir.push("Lockbox/Data/");
+        data_dir.push("Databoxer/Data/");
     } else if cfg!(target_os = "macos") {
-        data_dir.push("Library/Application Support/Lockbox/");
+        data_dir.push("Library/Application Support/Databoxer/");
     } else { // Assuming Linux or other Unix-like OS
-        data_dir.push(".local/share/lockbox/");
+        data_dir.push(".local/share/databoxer/");
     }
 
     if !data_dir.exists() {
@@ -30,11 +30,11 @@ pub fn get_config_dir() -> Result<PathBuf> {
     let mut config_dir = get_env_home()?;
     
     if cfg!(target_os = "windows") {
-        config_dir.push("Lockbox/Config/");
+        config_dir.push("Databoxer/Config/");
     } else if cfg!(target_os = "macos") {
-        config_dir.push("Library/Preferences/Lockbox/");
+        config_dir.push("Library/Preferences/Databoxer/");
     } else { // Assuming Linux or other Unix-like OS
-        config_dir.push(".config/lockbox/");
+        config_dir.push(".config/databoxer/");
     }
 
     if !config_dir.exists() {

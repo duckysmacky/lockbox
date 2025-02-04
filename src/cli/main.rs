@@ -1,7 +1,7 @@
 //! CLI entry point
 
 use std::{io, time::Instant};
-use lockbox::{cli, log_success, log_info};
+use databoxer::{cli, log_success, log_info};
 
 fn main() -> io::Result<()> {
     let start_time = Instant::now();
