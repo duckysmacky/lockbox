@@ -162,7 +162,7 @@ pub fn get_key(password: &str, opts: options::GetKeyOptions) -> Result<String> {
     log_info!("Retrieving the encryption key from the current profile");
     let key = keys::get_key(password)?;
     
-    if !opts.byte_format {
+    if opts.byte_format {
         return Ok(format!("{:?}", key))
     }
     Ok(utils::hex::bytes_to_string(&key))
