@@ -4,7 +4,9 @@
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::path::Path;
-use std::ffi::{OsStr, OsString};
+use std::ffi::OsString;
+use std::fs;
+use std::time::SystemTime;
 use crate::{log_debug, new_err, Checksum, Key, Nonce, Result};
 use crate::core::data::io;
 use crate::core::utils;
@@ -33,7 +35,7 @@ pub struct Boxfile {
     /// not required, as doesn't contain any sensitive information.
     ///
     /// *Could be a subject to change in the future*
-    header: BoxfileHeader,
+    pub header: BoxfileHeader,
     /// File body is the encrypted content of the original file together with randomly
     /// generated `padding`. It is the main payload for the entire `boxfile`. Can be
     /// compressed for reduced storage size
@@ -68,11 +70,10 @@ impl Boxfile {
         log_debug!("Boxfile body generated");
 
         let header = BoxfileHeader::new(
-            file_path.file_stem(),
-            file_path.extension(),
+            file_path,
             padding_len,
             cipher::generate_nonce()
-        );
+        )?;
         log_debug!("Boxfile header generated: {:?}", &header);
 
         let mut hasher = Sha256::new();
@@ -109,14 +110,12 @@ impl Boxfile {
         Ok(boxfile)
     }
 
-    /// Returns the information about the file contained within the `boxfile`: original
-    /// file name and extension.
-    pub fn file_info(&self) -> (&OsString, &OsString) {
-        let file_name = &self.header.original_name;
-        let file_extension = &self.header.original_extension;
-        (file_name, file_extension)
+    /// Returns the information about the file contained within the `boxfile`: original file name, 
+    /// and extension
+    pub fn file_info(&self) -> (&OsString, &Option<OsString>) {
+        (&self.header.name, &self.header.extension)
     }
-
+    
     /// Verifies checksum for the `boxfile` by generating new checksum for current data and
     /// comparing it to the checksum stored in the header
     pub fn verify_checksum(&self) -> Result<bool> {
@@ -183,15 +182,21 @@ impl Boxfile {
 /// includes a unique identifier (magic), length of the generated padding, the original
 /// file name and extension and generated `Nonce` for encryption/decryption uniqueness
 #[derive(Serialize, Deserialize, Debug)]
-struct BoxfileHeader {
+pub struct BoxfileHeader {
     /// Unique identifier for the file format including the used version
     magic: [u8; 4],
     /// The length of the generated padding
     padding_len: u8,
     /// The original name of the file
-    original_name: OsString,
+    pub name: OsString,
     /// The original extension of the file
-    original_extension: OsString,
+    pub extension: Option<OsString>,
+    /// The original create time of the file
+    pub create_time: Option<SystemTime>,
+    /// The original modify time of the file
+    pub modify_time: Option<SystemTime>,
+    /// The original access time of the file
+    pub access_time: Option<SystemTime>,
     /// Randomly generated 12-byte `Nonce` used for encryption and decryption. Ensures
     /// that no ciphertext generated using one key is the same
     nonce: Nonce
@@ -199,27 +204,27 @@ struct BoxfileHeader {
 
 impl BoxfileHeader {
     pub fn new(
-        file_name: Option<&OsStr>,
-        file_extension: Option<&OsStr>,
+        file_path: &Path,
         padding_len: u8,
         nonce: Nonce 
-    ) -> Self {
-        let file_name = match file_name {
+    ) -> Result<Self> {
+        let name = match file_path.file_stem() {
             None => OsString::from("unknown"),
             Some(name) => OsString::from(name)
         };
-        let file_extension = match file_extension {
-            None => OsString::from(""),
-            Some(name) => OsString::from(name)
-        };
-
-        BoxfileHeader {
+        let extension = file_path.extension().map(|ext| ext.to_os_string());
+        let metadata = fs::metadata(file_path)?;
+        
+        Ok(BoxfileHeader {
             magic: header_info::MAGIC,
-            original_name: file_name,
-            original_extension: file_extension,
+            name,
+            extension,
+            create_time: metadata.created().ok(),
+            modify_time: metadata.modified().ok(),
+            access_time: metadata.accessed().ok(),
             padding_len,
             nonce
-        }
+        })
     }
 
     /// Returns the header serialized as plain bytes

@@ -90,22 +90,30 @@ pub fn decrypt(
 
                 if path.file_name() == None {
                     path.set_file_name(original_name);
-                    path.set_extension(original_extension);
+                    if let Some(extension) = original_extension {
+                        path.set_extension(extension);
+                    }
                 } else if path.extension() == None {
-                    path.set_extension(original_extension);
+                    if let Some(extension) = original_extension {
+                        path.set_extension(extension);
+                    }
                 }
                 path
             } else {
                 let mut path = input_path.to_path_buf();
                 path.set_file_name(original_name);
-                path.set_extension(original_extension);
+                if let Some(extension) = original_extension {
+                    path.set_extension(extension);
+                }
                 path
             }
         },
         None => {
             let mut path = input_path.to_path_buf();
             path.set_file_name(original_name);
-            path.set_extension(original_extension);
+            if let Some(extension) = original_extension {
+                path.set_extension(extension);
+            }
             path
         }
     };
