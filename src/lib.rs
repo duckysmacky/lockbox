@@ -39,6 +39,16 @@ pub fn decrypt(file_path: &std::path::Path, password: &str, options: &mut option
     core::decrypt(file_path, password, &mut options.output_paths)
 }
 
+
+/// Parses the provided boxfile and retrieves original metadata from the header.
+/// 
+/// Returns a vector which contains strings with retrieved information about original file name,
+/// extension, create, modify and access time. Will skip the unknown metadata unless optionally 
+/// specified not to
+pub fn information(file_path: &std::path::Path, options: options::InformationOptions) -> Result<Vec<String>> {
+    core::get_information(file_path, options.show_unknown)
+}
+
 /// Creates a new profile with the provided password and profile name. Will **not** automatically
 /// switch to the new profile
 ///

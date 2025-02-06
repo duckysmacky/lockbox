@@ -33,6 +33,20 @@ impl Default for DecryptionOptions {
     }
 }
 
+/// Options for file information
+pub struct InformationOptions {
+    /// Show unknown metadata with the rest
+    pub show_unknown: bool,
+}
+
+impl Default for InformationOptions {
+    fn default() -> Self {
+        InformationOptions {
+            show_unknown: false,
+        }
+    }
+}
+
 /// Options for key retrieval
 pub struct KeyGetOptions {
     /// Format encryption key as list of bytes

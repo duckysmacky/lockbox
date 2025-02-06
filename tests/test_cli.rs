@@ -200,3 +200,19 @@ fn test_key_setting() {
 
     cleanup();
 }
+
+#[test]
+fn test_file_information() {
+    setup();
+    
+    let test_dir = Path::new(common::TEST_DIR);
+    let test_file = test_dir.join("text.txt");
+
+    let output = databoxer_cmd!(p "box"; &test_file);
+    assert!(output.status.success(), "Text encryption failed");
+    
+    let output = databoxer_cmd!("information"; &test_file);
+    assert!(output.status.success(), "Information retrieval failed");
+    
+    cleanup();
+}

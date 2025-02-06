@@ -30,6 +30,11 @@ fn main() -> io::Result<()> {
         }
     }
 
+    /* INFORMATION */
+    if let Some(args) = global_args.subcommand_matches("information") {
+        handlers::handle_information(args);
+    }
+    
     /* PROFILE */
     if let Some(args) = global_args.subcommand_matches("profile") {
         /* PROFILE CREATE */
