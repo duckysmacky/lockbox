@@ -1,9 +1,9 @@
 //! Contains core logic for key manipulation subcommands
 
-use crate::{log_info, new_err, options, utils, Key};
+use crate::{log_info, new_err, Key};
+use crate::core::utils;
 use crate::core::data::keys;
 use crate::core::encryption::cipher;
-
 pub fn new(password: &str) -> crate::Result<()> {
     log_info!("Generating a new encryption key for current profile");
     let key = cipher::generate_key();
@@ -11,11 +11,11 @@ pub fn new(password: &str) -> crate::Result<()> {
     Ok(())
 }
 
-pub fn get(password: &str, opts: options::GetKeyOptions) -> crate::Result<String> {
+pub fn get(password: &str, as_byte_array: bool) -> crate::Result<String> {
     log_info!("Retrieving the encryption key from the current profile");
     let key = keys::get_key(password)?;
     
-    if opts.byte_format {
+    if as_byte_array {
         return Ok(format!("{:?}", key))
     }
     Ok(utils::hex::bytes_to_string(&key))

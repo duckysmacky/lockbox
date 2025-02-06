@@ -1,9 +1,10 @@
 //! Core API wrapper functions which handle the CLI input
 
-use std::{collections::VecDeque, path::PathBuf, ffi::OsStr};
+use std::{collections::VecDeque, ffi::OsStr, path::PathBuf};
 use clap::ArgMatches;
-use crate::utils::path;
-use crate::{options, log_error, log_success, log_warn, log_info, exits_on};
+use crate::core::utils::path;
+use crate::{exits_on, log_error, log_info, log_success, log_warn};
+use crate::options;
 use super::prompts;
 
 pub fn handle_box(g_args: &ArgMatches, args: &ArgMatches) -> (u32, u32) {
@@ -37,7 +38,7 @@ pub fn handle_box(g_args: &ArgMatches, args: &ArgMatches) -> (u32, u32) {
         };
 
         log_info!("Encrypting {:?}", file_name);
-        match crate::encrypt(&password, path.as_path(), &mut options) {
+        match crate::encrypt(path.as_path(), &password, &mut options) {
             Ok(_) => log_success!("Successfully encrypted {:?}", file_name),
             Err(err) => {
                 log_error!("Unable to encrypt \"{}\"", file_name.to_string_lossy());
@@ -80,7 +81,7 @@ pub fn handle_unbox(g_args: &ArgMatches, args: &ArgMatches) -> (u32, u32) {
         };
 
         log_info!("Decrypting {:?}", file_name);
-        match crate::decrypt(&password, path.as_path(), &mut options) {
+        match crate::decrypt(path.as_path(), &password, &mut options) {
             Ok(_) => log_success!("Successfully decrypted {:?}", path.file_name().unwrap().to_os_string()),
             Err(err) => {
                 log_error!("Unable to decrypt \"{}\"", file_name.to_string_lossy());
@@ -101,7 +102,7 @@ pub fn handle_profile_create(g_args: &ArgMatches, args: &ArgMatches) {
 
     let name = args.get_one::<String>("NAME").expect("Profile name is required");
 
-    match crate::create_profile(&password, name) {
+    match crate::create_profile(name, &password) {
         Ok(_) => log_success!("Successfully created new profile \"{}\"", name),
         Err(err) => {
             log_error!("Unable to create a new profile named \"{}\"", name);
@@ -118,7 +119,7 @@ pub fn handle_profile_delete(g_args: &ArgMatches, args: &ArgMatches) {
         Some(password) => password.to_string()
     };
 
-    match crate::delete_profile(&password, name) {
+    match crate::delete_profile(name, &password) {
         Ok(_) => log_success!("Successfully deleted profile \"{}\"", name),
         Err(err) => {
             log_error!("Unable to delete profile \"{}\"", name);
@@ -135,7 +136,7 @@ pub fn handle_profile_set(g_args: &ArgMatches, args: &ArgMatches) {
         Some(password) => password.to_string()
     };
 
-    match crate::select_profile(&password, name) {
+    match crate::select_profile(name, &password) {
         Ok(_) => log_success!("Successfully set current profile to \"{}\"", name),
         Err(err) => {
             log_error!("Unable to switch to profile \"{}\"", name);
@@ -196,8 +197,8 @@ pub fn handle_key_get(g_args: &ArgMatches, args: &ArgMatches) {
         Some(password) => password.to_string()
     };
 
-    let options = options::GetKeyOptions {
-        byte_format: args.get_flag("BYTE-FORMAT"),
+    let options = options::KeyGetOptions {
+        as_byte_array: args.get_flag("BYTE-FORMAT"),
     };
 
     match crate::get_key(&password, options) {
@@ -220,7 +221,7 @@ pub fn handle_key_set(g_args: &ArgMatches, args: &ArgMatches) {
 
 	let new_key = args.get_one::<String>("KEY").expect("Key is required");
 
-    match crate::set_key(&password, &new_key) {
+    match crate::set_key(&new_key, &password) {
         Ok(_) => log_success!("Successfully set a new encryption key for the current profile"),
         Err(err) => {
             log_error!("Unable to set an encryption key for the current profile");

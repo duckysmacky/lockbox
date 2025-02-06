@@ -5,34 +5,12 @@
 //! encryption, decryption, key and profile management.
 
 pub use core::error::{Error, Result};
-pub use core::utils;
+pub use core::options;
 pub use core::encryption::{boxfile::Boxfile, cipher::{Checksum, Key, Nonce}};
 use self::core::{key, profile};
 
 pub mod cli;
 mod core;
-
-/// Contains extra options for some API functions
-pub mod options {
-    use std::{collections::VecDeque, path::PathBuf};
-
-    pub struct EncryptionOptions {
-        /// Don't replace the name with a random UUID for the encrypted file
-        pub keep_original_name: bool,
-        /// Contains an output path for each file
-        pub output_paths: Option<VecDeque<PathBuf>>
-    }
-
-    pub struct DecryptionOptions {
-        /// Contains an output path for each file
-        pub output_paths: Option<VecDeque<PathBuf>>
-    }
-
-    pub struct GetKeyOptions {
-        /// Format encryption key as list of bytes
-        pub byte_format: bool
-    }
-}
 
 /// Encrypts the file at the given path. Extra options can be provided to control the process
 ///
@@ -43,8 +21,8 @@ pub mod options {
 /// Most errors can be safely handled without an unsuccessful exit (e.g. file can just be skipped).
 /// Although it is better to exit on errors related with user authentication and profiles, as the
 /// program will simply not work without a user profile
-pub fn encrypt(password: &str, file_path: &std::path::Path, options: &mut options::EncryptionOptions) -> Result<()> {
-    core::encrypt(password, file_path, options)
+pub fn encrypt(file_path: &std::path::Path, password: &str, options: &mut options::EncryptionOptions) -> Result<()> {
+    core::encrypt(file_path, password, options.keep_original_name, &mut options.output_paths)
 }
 
 /// Decrypts the file at the given path. Extra options can be provided to control the process.
@@ -57,21 +35,15 @@ pub fn encrypt(password: &str, file_path: &std::path::Path, options: &mut option
 /// Most errors can be safely handled without an unsuccessful exit (e.g. file can just be skipped).
 /// Although it is better to exit on errors related with user authentication and profiles, as the
 /// program will simply not work without a user profile
-pub fn decrypt(password: &str, file_path: &std::path::Path, options: &mut options::DecryptionOptions) -> Result<()> {
-    core::decrypt(password, file_path, options)
+pub fn decrypt(file_path: &std::path::Path, password: &str, options: &mut options::DecryptionOptions) -> Result<()> {
+    core::decrypt(file_path, password, &mut options.output_paths)
 }
 
 /// Creates a new profile with the provided password and profile name. Will **not** automatically
 /// switch to the new profile
 ///
 /// No user authentication needed, as it just creates a new profile
-///
-/// # Errors
-/// Any error suggests that the function failed and should be the reason for an unsuccessful exit
-///
-/// * `IOError` - in case of failing to access or write to a `profiles.json` file
-/// * `CipherError` - unsuccessful attempt to hash the password
-pub fn create_profile(password: &str, profile_name: &str) -> Result<()> {
+pub fn create_profile(profile_name: &str, password: &str) -> Result<()> {
     profile::create(password, profile_name)
 }
 
@@ -79,41 +51,20 @@ pub fn create_profile(password: &str, profile_name: &str) -> Result<()> {
 /// profile in the list or if there are no profiles left set the current profile to `None`
 ///
 /// Needs the target profile's password to authenticate
-///
-/// # Errors
-/// Any error suggests that the function failed and should be the reason for an unsuccessful exit
-///
-/// * `AuthError` - invalid password for the target profile
-/// * `ProfileError` - if the target profile is not found
-/// * `IOError` - in case of failing to access or write to a `profiles.json` file
-pub fn delete_profile(password: &str, profile_name: &str) -> Result<()> {
+pub fn delete_profile(profile_name: &str, password: &str) -> Result<()> {
     profile::delete(password, profile_name)
 }
 
 /// Select (set as the current) the profile with the corresponding name
 ///
 /// Needs the target profile's password to authenticate
-///
-/// # Errors
-/// Any error suggests that the function failed and should be the reason for an unsuccessful exit
-///
-/// * `AuthError` - invalid password for the target profile
-/// * `InvalidInput` - if the target profile is already set to be the current one
-/// * `ProfileError` - if the target profile is not found
-/// * `IOError` - in case of failing to access or write to a `profiles.json` file
-pub fn select_profile(password: &str, profile_name: &str) -> Result<()> {
+pub fn select_profile(profile_name: &str, password: &str) -> Result<()> {
     profile::select(password, profile_name)
 }
 
 /// Returns the name of the currently selected profile
 ///
 /// No authentication needed, as it just returns the name
-///
-/// # Errors
-/// Any error suggests that the function failed and should be the reason for an unsuccessful exit
-///
-/// * `ProfileError` - if no profile is currently selected
-/// * `IOError` - in case of failing to access or write to a `profiles.json` file
 pub fn get_profile() -> Result<String> {
     profile::get_current()
 }
@@ -121,12 +72,6 @@ pub fn get_profile() -> Result<String> {
 /// Returns the names of all currently available profiles
 ///
 /// No authentication needed, as it just returns the names
-///
-/// # Errors
-/// Any error suggests that the function failed and should be the reason for an unsuccessful exit
-///
-/// * `ProfileError` - if no profile data is found (no profiles exist)
-/// * `IOError` - in case of failing to access or write to a `profiles.json` file
 pub fn get_profiles() -> Result<Vec<String>> {
     profile::get_all()
 }
@@ -137,13 +82,6 @@ pub fn get_profiles() -> Result<Vec<String>> {
 /// files will no longer be able to be decrypted due to a different key being used
 ///
 /// Needs the current profile's password to authenticate
-///
-/// # Errors
-/// Any error suggests that the function failed and should be the reason for an unsuccessful exit
-///
-/// * `AuthError` - invalid password for the current profile
-/// * `ProfileError` - if there is no current profile or no profiles found in general
-/// * `IOError` - in case of failing to access or write to a `profiles.json` file
 pub fn new_key(password: &str) -> Result<()> {
     key::new(password)
 }
@@ -151,15 +89,8 @@ pub fn new_key(password: &str) -> Result<()> {
 /// Returns the encryption key being used by the current profile in a hex format
 ///
 /// Needs the current profile's password to authenticate
-///
-/// # Errors
-/// Any error suggests that the function failed and should be the reason for an unsuccessful exit
-///
-/// * `AuthError` - invalid password for the current profile
-/// * `ProfileError` - if there is no current profile or no profiles found in general
-/// * `IOError` - in case of failing to access or write to a `profiles.json` file
-pub fn get_key(password: &str, options: options::GetKeyOptions) -> Result<String> {
-    key::get(password, options)
+pub fn get_key(password: &str, options: options::KeyGetOptions) -> Result<String> {
+    key::get(password, options.as_byte_array)
 }
 
 /// Sets a new encryption key for the current profile. The input key has to be a valid 32-byte long
@@ -167,14 +98,6 @@ pub fn get_key(password: &str, options: options::GetKeyOptions) -> Result<String
 /// ...]`)
 ///
 /// Needs the current profile's password to authenticate
-///
-/// # Errors
-/// Any error suggests that the function failed and should be the reason for an unsuccessful exit
-///
-/// * `AuthError` - invalid password for the current profile
-/// * `InvalidInput` - if the provided key is incorrect and cannot be parsed into a 32 byte array
-/// * `ProfileError` - if there is no current profile or no profiles found in general
-/// * `IOError` - in case of failing to access or write to a `profiles.json` file
-pub fn set_key(password: &str, new_key: &str) -> Result<()> {
+pub fn set_key(new_key: &str, password: &str) -> Result<()> {
     key::set(password, new_key)
 }

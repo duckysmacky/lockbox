@@ -5,8 +5,9 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::path::Path;
 use std::ffi::{OsStr, OsString};
-use crate::{log_debug, new_err, utils, Checksum, Key, Nonce, Result};
+use crate::{log_debug, new_err, Checksum, Key, Nonce, Result};
 use crate::core::data::io;
+use crate::core::utils;
 use super::cipher;
 
 mod header_info {
