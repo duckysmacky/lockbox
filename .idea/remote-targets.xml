@@ -15,6 +15,9 @@
             <option name="rustcVersion" value="error: couldn't read  --version: No such file or directory (os error 2)" />
           </config>
         </ContributedStateBase>
+        <ContributedStateBase type="RsLanguageRuntime">
+          <config />
+        </ContributedStateBase>
       </target>
     </targets>
   </component>

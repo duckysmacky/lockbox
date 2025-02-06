@@ -1,8 +1,7 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Test (WSL)" type="CargoCommandRunConfiguration" factoryName="Cargo Command">
+  <configuration default="false" name="Test Lib" type="CargoCommandRunConfiguration" factoryName="Cargo Command">
     <option name="buildProfileId" value="test" />
-    <target name="WSL - Ubuntu" />
-    <option name="command" value="test -- --test-threads=1" />
+    <option name="command" value="test --lib" />
     <option name="workingDirectory" value="file://$PROJECT_DIR$" />
     <envs />
     <option name="emulateTerminal" value="true" />
