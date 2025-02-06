@@ -4,8 +4,8 @@ use clap::ArgMatches;
 use crate::cli::prompts;
 use crate::{exits_on, log_error, log_success, log_warn};
 
-pub fn handle_profile_create(g_args: &ArgMatches, args: &ArgMatches) {
-    let password = match g_args.get_one::<String>("PASSWORD") {
+pub fn handle_profile_create(args: &ArgMatches) {
+    let password = match args.get_one::<String>("PASSWORD") {
         None => prompts::prompt_password("Please enter a password for the new profile:"),
         Some(password) => password.to_string()
     };
@@ -21,10 +21,10 @@ pub fn handle_profile_create(g_args: &ArgMatches, args: &ArgMatches) {
     }
 }
 
-pub fn handle_profile_delete(g_args: &ArgMatches, args: &ArgMatches) {
+pub fn handle_profile_delete(args: &ArgMatches) {
     let name = args.get_one::<String>("NAME").expect("Profile name is required");
 
-    let password = match g_args.get_one::<String>("PASSWORD") {
+    let password = match args.get_one::<String>("PASSWORD") {
         None => prompts::prompt_password(&format!("Please enter the password for {}", name)),
         Some(password) => password.to_string()
     };
@@ -38,10 +38,10 @@ pub fn handle_profile_delete(g_args: &ArgMatches, args: &ArgMatches) {
     }
 }
 
-pub fn handle_profile_set(g_args: &ArgMatches, args: &ArgMatches) {
+pub fn handle_profile_set(args: &ArgMatches) {
     let name = args.get_one::<String>("NAME").expect("Profile name is required");
 
-    let password = match g_args.get_one::<String>("PASSWORD") {
+    let password = match args.get_one::<String>("PASSWORD") {
         None => prompts::prompt_password(&format!("Please enter the password for {}", name)),
         Some(password) => password.to_string()
     };
@@ -55,7 +55,7 @@ pub fn handle_profile_set(g_args: &ArgMatches, args: &ArgMatches) {
     }
 }
 
-pub fn handle_profile_get(_g_args: &ArgMatches, _args: &ArgMatches) {
+pub fn handle_profile_get(_args: &ArgMatches) {
     match crate::get_profile() {
         Ok(name) => log_success!("Currently selected profile: {}", name),
         Err(err) => {
@@ -65,7 +65,7 @@ pub fn handle_profile_get(_g_args: &ArgMatches, _args: &ArgMatches) {
     }
 }
 
-pub fn handle_profile_list(_g_args: &ArgMatches, _args: &ArgMatches) {
+pub fn handle_profile_list(_args: &ArgMatches) {
     let profiles = crate::get_profiles();
 
     let profiles = profiles.unwrap_or_else(|err| {

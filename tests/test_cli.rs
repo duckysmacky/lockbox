@@ -23,7 +23,7 @@ macro_rules! databoxer_cmd {
     ($cmd:expr) => {
         {
             use common::command::{DataboxerCommand, print_output};
-            let command = DataboxerCommand::new($cmd);
+            let command = DataboxerCommand::new($cmd, false);
             let output = command.execute();
             print_output(&output);
             output
@@ -32,7 +32,28 @@ macro_rules! databoxer_cmd {
     ($cmd:expr; $($args:expr),+) => {
         {
             use common::command::{DataboxerCommand, print_output};
-            let mut command = DataboxerCommand::new($cmd);
+            let mut command = DataboxerCommand::new($cmd, false);
+            for arg in [$($args),*] {
+                command.arg(arg);
+            }
+            let output = command.execute();
+            print_output(&output);
+            output
+        }
+    };
+    (p $cmd:expr) => {
+        {
+            use common::command::{DataboxerCommand, print_output};
+            let command = DataboxerCommand::new($cmd, true);
+            let output = command.execute();
+            print_output(&output);
+            output
+        }
+    };
+    (p $cmd:expr; $($args:expr),+) => {
+        {
+            use common::command::{DataboxerCommand, print_output};
+            let mut command = DataboxerCommand::new($cmd, true);
             for arg in [$($args),*] {
                 command.arg(arg);
             }
@@ -50,10 +71,10 @@ fn test_text_encryption() {
     let test_dir = Path::new(common::TEST_DIR);
     let test_file = test_dir.join("text.txt");
 
-    let output = databoxer_cmd!("box"; &test_file);
+    let output = databoxer_cmd!(p "box"; &test_file);
     assert!(output.status.success(), "Text encryption failed");
 
-    let output = databoxer_cmd!("unbox"; &test_file);
+    let output = databoxer_cmd!(p "unbox"; &test_file);
     assert!(output.status.success(), "Text decryption failed");
 
     cleanup();
@@ -66,10 +87,10 @@ fn test_image_encryption() {
     let test_dir = Path::new(common::TEST_DIR);
     let test_file = test_dir.join("image.png");
 
-    let output = databoxer_cmd!("box"; &test_file);
+    let output = databoxer_cmd!(p "box"; &test_file);
     assert!(output.status.success(), "Image encryption failed");
 
-    let output = databoxer_cmd!("unbox"; &test_file);
+    let output = databoxer_cmd!(p "unbox"; &test_file);
     assert!(output.status.success(), "Image decryption failed");
 
     cleanup();
@@ -81,10 +102,10 @@ fn test_directory_encryption() {
 
     let test_dir = Path::new(common::TEST_DIR);
 
-    let output = databoxer_cmd!("box"; &test_dir);
+    let output = databoxer_cmd!(p "box"; &test_dir);
     assert!(output.status.success(), "Directory encryption failed");
 
-    let output = databoxer_cmd!("unbox"; &test_dir);
+    let output = databoxer_cmd!(p "unbox"; &test_dir);
     assert!(output.status.success(), "Directory decryption failed");
 
     cleanup();
@@ -96,10 +117,10 @@ fn test_recursive_encryption() {
 
     let test_dir = Path::new(common::TEST_DIR);
 
-    let output = databoxer_cmd!("box"; &test_dir);
+    let output = databoxer_cmd!(p "box"; &test_dir);
     assert!(output.status.success(), "Recursive encryption failed");
 
-    let output = databoxer_cmd!("unbox"; &test_dir);
+    let output = databoxer_cmd!(p "unbox"; &test_dir);
     assert!(output.status.success(), "Recursive decryption failed");
 
     cleanup();
@@ -111,10 +132,10 @@ fn test_profile_manipulation() {
 
     let profile_name: &str = "TEST PROFILE NAME";
 
-    let output = databoxer_cmd!("profile new"; profile_name);
+    let output = databoxer_cmd!(p "profile new"; profile_name);
     assert!(output.status.success(), "Profile creation failed");
 
-    let output = databoxer_cmd!("profile select"; profile_name);
+    let output = databoxer_cmd!(p "profile select"; profile_name);
     assert!(output.status.success(), "Profile selection failed");
 
     let output = databoxer_cmd!("profile get");
@@ -125,7 +146,7 @@ fn test_profile_manipulation() {
     assert!(output.status.success(), "Profiles list retrieval failed");
     assert!(output.stdout.len() > 0, "Invalid output for the list of existing profiles");
 
-    let output = databoxer_cmd!("profile delete"; profile_name);
+    let output = databoxer_cmd!(p "profile delete"; profile_name);
     assert!(output.status.success(), "Profile deletion failed");
 
     cleanup();
@@ -138,13 +159,13 @@ fn test_key_generation() {
     let test_dir = Path::new(common::TEST_DIR);
     let test_file = test_dir.join("text.txt");
 
-    let output = databoxer_cmd!("key new");
+    let output = databoxer_cmd!(p "key new");
     assert!(output.status.success(), "Key generation failed");
 
-    let output = databoxer_cmd!("box"; &test_file);
+    let output = databoxer_cmd!(p "box"; &test_file);
     assert!(output.status.success(), "Encryption failed with generated key");
 
-    let output = databoxer_cmd!("unbox"; &test_file);
+    let output = databoxer_cmd!(p "unbox"; &test_file);
     assert!(output.status.success(), "Decryption failed with generated key");
 
     cleanup()
@@ -165,16 +186,16 @@ fn test_key_setting() {
         .collect::<String>();
     let invalid_key = "KY&*";
 
-    let output = databoxer_cmd!("key set"; &valid_key);
+    let output = databoxer_cmd!(p "key set"; &valid_key);
     assert!(output.status.success(), "Key set failed");
 
-    let output = databoxer_cmd!("key set"; invalid_key);
+    let output = databoxer_cmd!(p "key set"; invalid_key);
     assert!(!output.status.success(), "Invalid key was accepted");
 
-    let output = databoxer_cmd!("box"; &test_file);
+    let output = databoxer_cmd!(p "box"; &test_file);
     assert!(output.status.success(), "Encryption failed with set key");
 
-    let output = databoxer_cmd!("unbox"; &test_file);
+    let output = databoxer_cmd!(p "unbox"; &test_file);
     assert!(output.status.success(), "Decryption failed with set key");
 
     cleanup();

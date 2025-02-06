@@ -4,7 +4,7 @@
 use std::ffi::OsStr;
 use std::process::{Command, Output};
 use std::path::PathBuf;
-use super::PASSWORD;
+use crate::common::PASSWORD;
 
 /// Represents the `databoxer [arg]...` command. Acts like a wrapper for the `Command` type
 pub struct DataboxerCommand {
@@ -13,7 +13,7 @@ pub struct DataboxerCommand {
 
 impl DataboxerCommand {
     /// Creates a new instance of a databoxer executable command for later use in tests
-    pub fn new(subcommand: &str) -> Self {
+    pub fn new(subcommand: &str, needs_password: bool) -> Self {
         let path = PathBuf::from("target/debug").join({
             if cfg!(target_os = "windows") {
                 "databoxer.exe"
@@ -22,10 +22,15 @@ impl DataboxerCommand {
             }
         });
         let mut command = Command::new(path);
+        
         command
-            .arg("-v")
-            .arg("-p").arg(PASSWORD)
+            .arg("--verbose")
             .args(subcommand.split_ascii_whitespace());
+        
+        if needs_password {
+            command.arg("--password").arg(PASSWORD);
+        }
+        
         Self { command }
     }
 

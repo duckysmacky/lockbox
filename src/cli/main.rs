@@ -2,17 +2,17 @@
 
 use std::{io, time::Instant};
 use databoxer::{cli, log_info, log_success};
-use databoxer::cli::handlers;
+use databoxer::cli::{command, handlers};
 
 fn main() -> io::Result<()> {
     let start_time = Instant::now();
-    let global_args = &cli::get_command().get_matches();
+    let global_args = &command::get_command().get_matches();
 
     cli::logger::configure_logger(&global_args);
 
     /* BOX */
     if let Some(args) = global_args.subcommand_matches("box") {
-        let (total, error) = handlers::handle_box(global_args, args);
+        let (total, error) = handlers::handle_box(args);
 
         log_success!("[{}/{}] files encrypted", total - error, total);
         if total == error {
@@ -22,7 +22,7 @@ fn main() -> io::Result<()> {
 
     /* UNBOX */
     if let Some(args) = global_args.subcommand_matches("unbox") {
-        let (total, error) = handlers::handle_unbox(global_args, args);
+        let (total, error) = handlers::handle_unbox(args);
 
         log_success!("[{}/{}] files decrypted", total - error, total);
         if total == error {
@@ -34,23 +34,23 @@ fn main() -> io::Result<()> {
     if let Some(args) = global_args.subcommand_matches("profile") {
         /* PROFILE CREATE */
         if let Some(args) = args.subcommand_matches("new") {
-            handlers::handle_profile_create(global_args, args);
+            handlers::handle_profile_create(args);
         }
         /* PROFILE DELETE */
         if let Some(args) = args.subcommand_matches("delete") {
-            handlers::handle_profile_delete(global_args, args);
+            handlers::handle_profile_delete(args);
         }
         /* PROFILE SET */
         if let Some(args) = args.subcommand_matches("set") {
-            handlers::handle_profile_set(global_args, args);
+            handlers::handle_profile_set(args);
         }
         /* PROFILE GET */
         if let Some(args) = args.subcommand_matches("get") {
-            handlers::handle_profile_get(global_args, args);
+            handlers::handle_profile_get(args);
         }
         /* PROFILE LIST */
         if let Some(args) = args.subcommand_matches("list") {
-            handlers::handle_profile_list(global_args, args);
+            handlers::handle_profile_list(args);
         }
     }
 
@@ -58,15 +58,15 @@ fn main() -> io::Result<()> {
     if let Some(args) = global_args.subcommand_matches("key") {
         /* KEY NEW */
         if let Some(args) = args.subcommand_matches("new") {
-            handlers::handle_key_new(global_args, args);
+            handlers::handle_key_new(args);
         }
         /* KEY GET */
         if let Some(args) = args.subcommand_matches("get") {
-            handlers::handle_key_get(global_args, args);
+            handlers::handle_key_get(args);
         }
 		/* KEY SET */
 		if let Some(args) = args.subcommand_matches("set") {
-            handlers::handle_key_set(global_args, args);
+            handlers::handle_key_set(args);
         }
     }
 
