@@ -1,8 +1,8 @@
-//! Contains everything related to the CLI wrapper around the api
+//! Contains everything related to the CLI wrapper around the Databoxer API
 
-pub mod commands;
 pub mod logger;
 pub mod prompts;
+pub mod handlers;
 
 use clap::{Arg, ArgAction, Command, command};
 
