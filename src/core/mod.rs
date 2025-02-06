@@ -1,16 +1,16 @@
-//! Contains the core functionality of the program
+//! Contains the core functionality of the program and main subcommand logic
 
 use std::fs;
 use std::path::Path;
 use crate::core::data::{io, keys};
-use crate::core::encryption::{boxfile, cipher};
-use crate::{Result, log_debug, log_info, log_warn, new_err, options, Key};
-use crate::core::data::profile::Profile;
-
+use crate::core::encryption::boxfile;
+use crate::{log_debug, log_info, log_warn, new_err, options, Result};
 pub mod utils;
 pub mod error;
 pub mod data;
 pub mod encryption;
+pub mod profile;
+pub mod key;
 
 /// Encrypts the file at provided path using current profile's key. Password is required to verify
 /// and get access to current profile. Additional options can be supplied to change the encryption
@@ -104,80 +104,3 @@ pub fn decrypt(password: &str, input_path: &Path, opts: &mut options::Decryption
 
     Ok(())
 }
-
-pub fn create_profile(password: &str, profile_name: &str) -> Result<()> {
-    log_info!("Creating a new profile with name \"{}\"", profile_name);
-    let mut profiles = data::get_profiles()?;
-    profiles.new_profile(Profile::new(profile_name, password)?)?;
-    Ok(())
-}
-
-pub fn delete_profile(password: &str, profile_name: &str) -> Result<()> {
-    log_info!("Deleting profile \"{}\"", profile_name);
-    let mut profiles = data::get_profiles()?;
-
-    profiles.delete_profile(password, profile_name)?;
-    Ok(())
-}
-
-pub fn select_profile(password: &str, profile_name: &str) -> Result<()> {
-    log_info!("Switching profile to \"{}\"", profile_name);
-    let mut profiles = data::get_profiles()?;
-
-    if let Ok(profile) = profiles.get_current_profile() {
-        if profile_name == profile.name {
-            return Err(new_err!(ProfileError: AlreadySelected, profile_name))
-        }
-    }
-
-    profiles.set_current(password, profile_name)?;
-    Ok(())
-}
-
-pub fn get_profile() -> Result<String> {
-    log_info!("Getting current profile");
-    let mut profiles = data::get_profiles()?;
-    let profile = profiles.get_current_profile()?;
-    Ok(profile.name.to_string())
-}
-
-pub fn get_profiles() -> Result<Vec<String>> {
-    log_info!("Listing all available profiles");
-
-    let profiles = data::get_profiles()?;
-    let profile_list = profiles.get_profiles().into_iter()
-        .map(|p| p.name.to_string())
-        .collect::<Vec<String>>();
-    Ok(profile_list)
-}
-
-pub fn new_key(password: &str) -> Result<()> {
-    log_info!("Generating a new encryption key for current profile");
-    let key = cipher::generate_key();
-    keys::set_key(password, key)?;
-    Ok(())
-}
-
-pub fn get_key(password: &str, opts: options::GetKeyOptions) -> Result<String> {
-    log_info!("Retrieving the encryption key from the current profile");
-    let key = keys::get_key(password)?;
-    
-    if opts.byte_format {
-        return Ok(format!("{:?}", key))
-    }
-    Ok(utils::hex::bytes_to_string(&key))
-}
-
-pub fn set_key(password: &str, new_key: &str) -> Result<()> {
-    log_info!("Setting the encryption key from the current profile");
-    let new_key = utils::hex::string_to_bytes(new_key)?;
-    
-    if new_key.len() != 32 {
-        return Err(new_err!(InvalidData: InvalidHex, "Provided hex is not a 32-byte key"))
-    }
-    
-    let new_key = Key::try_from(&new_key[..32]).unwrap();
-    keys::set_key(password, new_key)?;
-    Ok(())
-}
-

@@ -6,7 +6,8 @@
 
 pub use core::error::{Error, Result};
 pub use core::utils;
-pub use core::encryption::{boxfile::Boxfile, cipher::{Key, Nonce, Checksum}};
+pub use core::encryption::{boxfile::Boxfile, cipher::{Checksum, Key, Nonce}};
+use self::core::{key, profile};
 
 pub mod cli;
 mod core;
@@ -71,7 +72,7 @@ pub fn decrypt(password: &str, file_path: &std::path::Path, options: &mut option
 /// * `IOError` - in case of failing to access or write to a `profiles.json` file
 /// * `CipherError` - unsuccessful attempt to hash the password
 pub fn create_profile(password: &str, profile_name: &str) -> Result<()> {
-    core::create_profile(password, profile_name)
+    profile::create(password, profile_name)
 }
 
 /// Deletes the profile with the corresponding name. After deletion will switch back to the first
@@ -86,7 +87,7 @@ pub fn create_profile(password: &str, profile_name: &str) -> Result<()> {
 /// * `ProfileError` - if the target profile is not found
 /// * `IOError` - in case of failing to access or write to a `profiles.json` file
 pub fn delete_profile(password: &str, profile_name: &str) -> Result<()> {
-    core::delete_profile(password, profile_name)
+    profile::delete(password, profile_name)
 }
 
 /// Select (set as the current) the profile with the corresponding name
@@ -101,7 +102,7 @@ pub fn delete_profile(password: &str, profile_name: &str) -> Result<()> {
 /// * `ProfileError` - if the target profile is not found
 /// * `IOError` - in case of failing to access or write to a `profiles.json` file
 pub fn select_profile(password: &str, profile_name: &str) -> Result<()> {
-    core::select_profile(password, profile_name)
+    profile::select(password, profile_name)
 }
 
 /// Returns the name of the currently selected profile
@@ -114,7 +115,7 @@ pub fn select_profile(password: &str, profile_name: &str) -> Result<()> {
 /// * `ProfileError` - if no profile is currently selected
 /// * `IOError` - in case of failing to access or write to a `profiles.json` file
 pub fn get_profile() -> Result<String> {
-    core::get_profile()
+    profile::get_current()
 }
 
 /// Returns the names of all currently available profiles
@@ -127,7 +128,7 @@ pub fn get_profile() -> Result<String> {
 /// * `ProfileError` - if no profile data is found (no profiles exist)
 /// * `IOError` - in case of failing to access or write to a `profiles.json` file
 pub fn get_profiles() -> Result<Vec<String>> {
-    core::get_profiles()
+    profile::get_all()
 }
 
 /// Generates a new encryption key for the current profile
@@ -144,7 +145,7 @@ pub fn get_profiles() -> Result<Vec<String>> {
 /// * `ProfileError` - if there is no current profile or no profiles found in general
 /// * `IOError` - in case of failing to access or write to a `profiles.json` file
 pub fn new_key(password: &str) -> Result<()> {
-    core::new_key(password)
+    key::new(password)
 }
 
 /// Returns the encryption key being used by the current profile in a hex format
@@ -158,7 +159,7 @@ pub fn new_key(password: &str) -> Result<()> {
 /// * `ProfileError` - if there is no current profile or no profiles found in general
 /// * `IOError` - in case of failing to access or write to a `profiles.json` file
 pub fn get_key(password: &str, options: options::GetKeyOptions) -> Result<String> {
-    core::get_key(password, options)
+    key::get(password, options)
 }
 
 /// Sets a new encryption key for the current profile. The input key has to be a valid 32-byte long
@@ -175,5 +176,5 @@ pub fn get_key(password: &str, options: options::GetKeyOptions) -> Result<String
 /// * `ProfileError` - if there is no current profile or no profiles found in general
 /// * `IOError` - in case of failing to access or write to a `profiles.json` file
 pub fn set_key(password: &str, new_key: &str) -> Result<()> {
-    core::set_key(password, new_key)
+    key::set(password, new_key)
 }
