@@ -11,6 +11,7 @@ use self::core::{key, profile};
 
 pub mod cli;
 mod core;
+pub mod app;
 
 /// Encrypts the file at the given path. Extra options can be provided to control the process
 ///
