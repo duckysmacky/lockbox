@@ -1,20 +1,22 @@
 //! CLI entry point
 
 use std::{io, time::Instant};
-use databoxer::{cli, log_info, log_success};
-use databoxer::cli::{command, handlers};
+use databoxer::app::AppMode;
+use databoxer::cli::{logger, command, handlers};
 
 fn main() -> io::Result<()> {
+    databoxer::app::set_app_mode(AppMode::CLI);
+    
     let start_time = Instant::now();
     let global_args = &command::get_command().get_matches();
 
-    cli::logger::configure_logger(&global_args);
+    logger::configure_logger(&global_args);
 
     /* BOX */
     if let Some(args) = global_args.subcommand_matches("box") {
         let (total, error) = handlers::handle_box(args);
 
-        log_success!("[{}/{}] files encrypted", total - error, total);
+        println!("[{}/{}] files encrypted", total - error, total);
         if total == error {
             std::process::exit(1);
         }
@@ -24,7 +26,7 @@ fn main() -> io::Result<()> {
     if let Some(args) = global_args.subcommand_matches("unbox") {
         let (total, error) = handlers::handle_unbox(args);
 
-        log_success!("[{}/{}] files decrypted", total - error, total);
+        println!("[{}/{}] files decrypted", total - error, total);
         if total == error {
             std::process::exit(1);
         }
@@ -76,6 +78,6 @@ fn main() -> io::Result<()> {
     }
 
     let duration = start_time.elapsed();
-    log_info!("Time taken: {:.2?}", duration);
+    println!("Time taken: {:.2?}", duration);
     Ok(())
 }
